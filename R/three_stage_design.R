@@ -36,7 +36,7 @@ three_stage_design <- function(t_star,
                                events_final = NULL,
                                alpha_one_sided = 0.025,
                                alpha_spend_f = ldobf,
-                               length_t){
+                               length_t = 18){
 
   if (is.null(dco_int_1) && is.null(events_int_1)) stop("Either dco_int_1 or events_int_1 must be specified.")
   if (is.null(dco_int_2) && is.null(events_int_2)) stop("Either dco_int_2 or events_int_2 must be specified.")
