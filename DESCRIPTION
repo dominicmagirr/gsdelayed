@@ -1,13 +1,19 @@
 Package: gsdelayed
-Title: What the Package Does (One Line, Title Case)
+Title: Design a group-sequential trial when anticipating a delayed effect.
 Version: 0.0.0.9000
 Authors@R: 
-    person(given = "First",
-           family = "Last",
+    person(given = "Dominic",
+           family = "Magirr",
            role = c("aut", "cre"),
-           email = "first.last@example.com",
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-License: What license it uses
+           email = "dominic.magirr@novartis.com",
+           comment = c(ORCID = "0000-0002-3959-7057"))
+Description: R package to help with design of a group-sequential trial with time-to-event data and an anticipated delayed treatment effect.
+License: MIT
 Encoding: UTF-8
 LazyData: true
+RoxygenNote: 6.1.1
+Imports:
+    dplyr,
+    purrr,
+    survival,
+    mvtnorm
