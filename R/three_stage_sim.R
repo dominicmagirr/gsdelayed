@@ -7,9 +7,9 @@ three_stage_sim_1 <- function(dummy = 1,
   t_star <- design$t_star
 
   df_uncensored <- sim_t_uncensored(model, recruitment)
-  df_interim_1 <- apply_dco(df_uncensored, events = ceiling(design$expected_events[1]))
-  df_interim_2 <- apply_dco(df_uncensored, events = ceiling(design$expected_events[2]))
-  df_final <- apply_dco(df_uncensored, events = ceiling(design$expected_events[3]))
+  df_interim_1 <- apply_dco(df_uncensored, events = ceiling(design$n_events[1]))
+  df_interim_2 <- apply_dco(df_uncensored, events = ceiling(design$n_events[2]))
+  df_final <- apply_dco(df_uncensored, events = ceiling(design$n_events[3]))
 
   wlrt_interim_1 <- wlrt(df_interim_1,
                          trt_colname = "group",

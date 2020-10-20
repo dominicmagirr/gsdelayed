@@ -17,3 +17,7 @@ Imports:
     purrr,
     survival,
     mvtnorm
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr

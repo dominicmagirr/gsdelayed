@@ -69,11 +69,11 @@ single_stage_design(t_star = 0,
                     model = model,
                     recruitment = recruitment,
                     dco_final = 30,
-                    alpha_one_sided = 0.025)[c("overall_power", "expected_events")]
+                    alpha_one_sided = 0.025)[c("overall_power", "n_events")]
 #> $overall_power
 #> [1] 0.7978047
 #> 
-#> $expected_events
+#> $n_events
 #> [1] 347.5672
 ```
 
@@ -91,11 +91,11 @@ single_stage_design(t_star = 12,
                     model = model,
                     recruitment = recruitment,
                     dco_final = 30,
-                    alpha_one_sided = 0.025)[c("overall_power", "expected_events")]
+                    alpha_one_sided = 0.025)[c("overall_power", "n_events")]
 #> $overall_power
 #> [1] 0.9155788
 #> 
-#> $expected_events
+#> $n_events
 #> [1] 347.5672
 ```
 
@@ -182,7 +182,7 @@ three_stage_design(t_star = 0,
                                               "overall_power",
                                               "expected_t")]
 #> $critical_values
-#> [1] -2.325146 -2.170453 -2.048391
+#> [1] -2.325146 -2.170453 -2.046141
 #> 
 #> $p_first_int_stop
 #> under_alternative under_null_approx 
@@ -193,7 +193,7 @@ three_stage_design(t_star = 0,
 #>       0.355540272       0.008404153 
 #> 
 #> $overall_power
-#> [1] 0.7740606
+#> [1] 0.7747065
 #> 
 #> $expected_t
 #> under_alternative under_null_approx 
@@ -217,7 +217,7 @@ three_stage_design(t_star = 12,
                                               "overall_power",
                                               "expected_t")]
 #> $critical_values
-#> [1] -2.680399 -2.226216 -1.988807
+#> [1] -2.680399 -2.226216 -1.988668
 #> 
 #> $p_first_int_stop
 #> under_alternative under_null_approx 
@@ -228,7 +228,7 @@ three_stage_design(t_star = 12,
 #>        0.51090994        0.01068565 
 #> 
 #> $overall_power
-#> [1] 0.9133178
+#> [1] 0.9133394
 #> 
 #> $expected_t
 #> under_alternative under_null_approx 

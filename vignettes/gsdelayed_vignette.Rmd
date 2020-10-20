@@ -1,0 +1,213 @@
+---
+title: "gsdelayed_vignette"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{gsdelayed_vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+#library(gsdelayed)
+devtools::load_all()
+library(dplyr)
+```
+
+# Introduction
+
+The goal of gsdelayed is to help with designing a randomized controlled trial, where the endpoint is time-to-event, and a delayed treatment effect is anticipated. [Modestly-weighted log-rank statistics](https://onlinelibrary.wiley.com/doi/full/10.1002/sim.8186) are used, which includes the standard log-rank statistic as a special case. Single-stage, two-stage and three-stage designs are accommodated, where the default is to use a Lan-DeMets O'Brien-Fleming alpha-spending function. But the user is free to specify any alpha-spending function they wish. Operating characteristics are calculated via numerical integration (for speed). However simulation functions are also provided that can be used to double-check the chosen design.
+
+
+# Example
+
+Suppose we are designing a RCT where we expect a delayed treatment effect on survival. For example, our alternative hypothesis might look like this:
+
+```{r}
+#library(gsdelayed)
+
+t_seq <- seq(0,36, length.out = 100)
+s_c <- purrr::map_dbl(t_seq, surv_pieces_simple, change_points = c(6), lambdas = log(2) / c(9, 9))
+s_e <- purrr::map_dbl(t_seq, surv_pieces_simple, change_points = c(6), lambdas = log(2) / c(9, 16))
+
+plot(t_seq, s_c, ylim = c(0,1), type = "l", 
+     xlab = "time (months)", ylab = "survival",
+     main = "Alternative hypothesis in an immuno-oncology RCT")
+points(t_seq, s_e, lty = 2, type = "l")
+legend("topright", c("experimental", "control"), lty = 2:1)
+```
+
+## What sample size do we need?
+
+In a time-to-event setting, sample size calculations are never straightforward, because power has a complex relationship with the event distributions and censoring distributions. The latter is driven primarily by the recruitment assumptions and length of follow-up. 
+
+A large pharmaceutical company may be in the fortunate position that they can "choose" a recruitment rate to ensure the study is completed in a timely manner. For example, suppose we require recruiment to last no longer than 12 months, and the whole study to last no longer than 30 months. We can try out multiple recruitment rates to see which gives us sufficient power.
+
+In the following, we compare two test statistics in a single-stage design. The first is a standard log-rank statistic. The second is a modestly-weighted log-rank statistic with $t^* = 12$. Loosely speaking this is like doing an average landmark analysis from 12 months until the maximum follow-up time (as is described [here](https://arxiv.org/abs/2007.04767)).
+
+
+```{r}
+## alternative hypothesis
+model = list(change_points = c(6),
+             lambdas_0 = c(log(2) / 9, log(2) / 9),
+             lambdas_1 = c(log(2) / 9, log(2) / 16))
+
+
+## k = 1 is equivalent to uniform recruitment rate
+recruitment_options = list(list(n_0 = 150, n_1 = 150, r_period = 12, k = 1),
+                           list(n_0 = 200, n_1 = 200, r_period = 12, k = 1),
+                           list(n_0 = 250, n_1 = 250, r_period = 12, k = 1),
+                           list(n_0 = 300, n_1 = 300, r_period = 12, k = 1),
+                           list(n_0 = 350, n_1 = 350, r_period = 12, k = 1))
+
+
+## standard log-rank test (t*=0)
+single_stage_options_lrt <- recruitment_options %>% 
+  purrr::map(gsdelayed::single_stage_design,
+             t_star = 0,
+             model = model,
+             dco_final = 30,
+             alpha_one_sided = 0.025)
+
+## modestly-weighted log-rank test (t*=12)
+single_stage_options_mwlrt <- recruitment_options %>% 
+  purrr::map(gsdelayed::single_stage_design,
+             t_star = 12,
+             model = model,
+             dco_final = 30,
+             alpha_one_sided = 0.025)
+
+## compare power
+data.frame(n_per_arm = seq(150, 350, by = 50),
+           power_lrt = purrr::map_dbl(single_stage_options_lrt, function(x) round(x$overall_power, 2)),
+           power_mwlrt = purrr::map_dbl(single_stage_options_mwlrt, function(x) round(x$overall_power, 2)))
+
+```
+
+In this case, if we use the standard log-rank statistic then we need 300 patients per arm for 90% power. If we use the modestly-weighted log-rank statistic then we need around 220 patients per arm.
+
+Note that if we were not able to vary the recruitment rate, we could have instead varied the length of recruitment and/or the timing of the data-cut off until we found something with satisfactory power.
+
+## How has power been calculated?
+
+We can look a bit more carefully at the output for the chosen single-stage designs. Firstly, for the standard log-rank test...
+
+```{r}
+recruitment_lrt <- list(n_0 = 300, n_1 = 300, r_period = 12, k = 1)
+
+single_stage_lrt <- gsdelayed::single_stage_design(t_star = 0,
+                                                   model = model,
+                                                   recruitment = recruitment_lrt,
+                                                   dco_final = 30,
+                                                   alpha_one_sided = 0.025)
+
+single_stage_lrt[c("critical_values",
+                   "overall_power",
+                   "n_events",
+                   "var_u",
+                   "ncp_z")]
+```
+
+The critical value for the Z statistic is -1.96. Let's look a little more closely at the Z statistic
+
+$$Z = U_W / \text{var}(U_W)$$
+
+where $U_{W}$ is the weighted log-rank statistic
+
+$$U_W := \sum_{j} w_j\left( O_{1,j} - E_{1,j}\right)\sim N(0, \sum_jw_j^2V_{1,j})$$
+
+i.e., a weighted sum of observed minus expected events on the experimental arm, where the expectation is taken assuming the survival curves are identical. For the standard log-rank statistic $w_j = 1$ at all event times $t_1, \ldots, t_k$. The number of events, variance of $U$, and the non-centrality parameter of the Z statistic are all approximated via numerical integration, as is described in Section 3.3 of the [paper on modestly-weighted log-rank tests](https://onlinelibrary.wiley.com/doi/full/10.1002/sim.8186).
+
+
+We can look at the same thing for the modestly-weighted log-rank test with $t^* = 12$...
+
+
+```{r}
+recruitment_mwlrt <- list(n_0 = 220, n_1 = 220, r_period = 12, k = 1)
+
+single_stage_mwlrt <- gsdelayed::single_stage_design(t_star = 12,
+                                                     model = model,
+                                                     recruitment = recruitment_mwlrt,
+                                                     dco_final = 30,
+                                                     alpha_one_sided = 0.025)
+
+single_stage_mwlrt[c("critical_values",
+                     "overall_power",
+                     "n_events",
+                     "var_u",
+                     "ncp_z")]
+```
+
+
+
+## Two-stage designs
+
+Let's explore adding an interim analysis in order to reduce the expected duration of the study. The two degrees of freedom we have are 
+
+1. The timing of the interim analysis.
+2. The amount of alpha spend at the interim analysis.
+
+It is straightforward to vary these parameters and check the operating characteristics of such a design. By default, a Lan-DeMets O'Brien-Fleming spending function is used, but any spending function can be specified by the user. Let's start by considering an interim analysis at 18 months, using the default spending function. Again, we consider using both a standard log-rank statistic, and a modestly-weighted log-rank statistic
+
+```{r}
+
+
+two_stage_lrt <- gsdelayed::two_stage_design(t_star = 0,
+                                             model = model,
+                                             recruitment = recruitment_lrt,
+                                             dco_int = 18,
+                                             dco_final = 30,
+                                             alpha_spend_f = ldobf,
+                                             alpha_one_sided = 0.025)  
+
+two_stage_mwlrt <- gsdelayed::two_stage_design(t_star = 12,
+                                               model = model,
+                                               recruitment = recruitment_mwlrt,
+                                               dco_int = 18,
+                                               dco_final = 30,
+                                               alpha_spend_f = ldobf,
+                                               alpha_one_sided = 0.025)
+```
+
+Consider the output for the standard log-rank test first:
+
+```{r}
+two_stage_lrt[c("critical_values",
+                "p_early_stop",
+                "overall_power",
+                "expected_t",
+                "n_events",
+                "var_u",
+                "ncp_z")]
+```
+
+The critical values for the z-statistic are -2.33 at the interim and -2.03 at the final analysis. This compares with -1.96 for the single-stage design. The probability of stopping early is $pr(Z < -2.33) = 0.27$ under the alternative hypothesis. The probability of early stopping under the null hypothesis is approximated by assuming the non-centrality parameter is $0$, and using the same critical values. This is described as "approx" because the critical values depend on var$(U)$, which is calculated under the alternative. In more detail, the interim critical value $c_1$ is calculated as $\Phi^{-1}(\alpha^*)$, where the interim spend $\alpha^*$ is found via
+
+$$f^{SF}(\text{var}(U_{\text{int}}) / \text{var}(U_{\text{final}}))$$
+
+where $f^{SF}$ is the spending function, and $\text{var}(U_{\text{int}})$ and $\text{var}(U_{\text{int}})$ are the anticipated variance of the U-statistic at the interim- and final-analyses, assuming the alternative hypothesis, found via numerical integration in `gsdelayed::two_stage_design`.
+
+Similarly, the final critical value $c_2$ is found via a call to `mvtnorm::pmvnorm`.
+
+DETAILS HERE
+
+## Implementation
+
+
+EXPLAIN HOW TO PERFORM THE GROUP-SEQUENTIAL TEST, WHEN THE ACTUAL AMOUNT OF INFORMATION DIFFERS FROM THE ANTICIPATED VALUES
+
+## Extension to 3-stage design
+
+BRIEF DESCRIPTION. NOT VERY INTERESTING HAVING DESCRIBED TWO-STAGE DESIGN IN DETAIL
+
+
+
+
+
+

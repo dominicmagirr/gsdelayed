@@ -6,7 +6,7 @@ single_stage_sim_1 <- function(dummy = 1,
   t_star <- design$t_star
 
   df_uncensored <- sim_t_uncensored(model, recruitment)
-  df_final <- apply_dco(df_uncensored, events = ceiling(design$expected_events[1]))
+  df_final <- apply_dco(df_uncensored, events = ceiling(design$n_events[1]))
 
 
   wlrt_final <- wlrt(df_final,

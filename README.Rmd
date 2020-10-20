@@ -61,7 +61,7 @@ single_stage_design(t_star = 0,
                     model = model,
                     recruitment = recruitment,
                     dco_final = 30,
-                    alpha_one_sided = 0.025)[c("overall_power", "expected_events")]
+                    alpha_one_sided = 0.025)[c("overall_power", "n_events")]
 ```
 
 Answer: about 80%. And we expect to observe around 350 events. Given that we anticipate a delayed effect, we can increase power by using a [modestly-weighted log-rank test](https://onlinelibrary.wiley.com/doi/full/10.1002/sim.8186). If we choose the parameter $t^*$ equal to 12, we are effectively doing an average landmark analysis from time 12 months until the end of the study (as is discussed [here](https://arxiv.org/abs/2007.04767)).
@@ -73,7 +73,7 @@ single_stage_design(t_star = 12,
                     model = model,
                     recruitment = recruitment,
                     dco_final = 30,
-                    alpha_one_sided = 0.025)[c("overall_power", "expected_events")]
+                    alpha_one_sided = 0.025)[c("overall_power", "n_events")]
 ```
 
 

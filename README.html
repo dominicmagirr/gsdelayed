@@ -640,11 +640,11 @@ body {
 <a class="sourceLine" id="cb3-10" data-line-number="10">                    <span class="dt">model =</span> model,</a>
 <a class="sourceLine" id="cb3-11" data-line-number="11">                    <span class="dt">recruitment =</span> recruitment,</a>
 <a class="sourceLine" id="cb3-12" data-line-number="12">                    <span class="dt">dco_final =</span> <span class="dv">30</span>,</a>
-<a class="sourceLine" id="cb3-13" data-line-number="13">                    <span class="dt">alpha_one_sided =</span> <span class="fl">0.025</span>)[<span class="kw">c</span>(<span class="st">&quot;overall_power&quot;</span>, <span class="st">&quot;expected_events&quot;</span>)]</a>
+<a class="sourceLine" id="cb3-13" data-line-number="13">                    <span class="dt">alpha_one_sided =</span> <span class="fl">0.025</span>)[<span class="kw">c</span>(<span class="st">&quot;overall_power&quot;</span>, <span class="st">&quot;n_events&quot;</span>)]</a>
 <a class="sourceLine" id="cb3-14" data-line-number="14"><span class="co">#&gt; $overall_power</span></a>
 <a class="sourceLine" id="cb3-15" data-line-number="15"><span class="co">#&gt; [1] 0.7978047</span></a>
 <a class="sourceLine" id="cb3-16" data-line-number="16"><span class="co">#&gt; </span></a>
-<a class="sourceLine" id="cb3-17" data-line-number="17"><span class="co">#&gt; $expected_events</span></a>
+<a class="sourceLine" id="cb3-17" data-line-number="17"><span class="co">#&gt; $n_events</span></a>
 <a class="sourceLine" id="cb3-18" data-line-number="18"><span class="co">#&gt; [1] 347.5672</span></a></code></pre></div>
 <p>Answer: about 80%. And we expect to observe around 350 events. Given that we anticipate a delayed effect, we can increase power by using a <a href="https://onlinelibrary.wiley.com/doi/full/10.1002/sim.8186">modestly-weighted log-rank test</a>. If we choose the parameter (t^*) equal to 12, we are effectively doing an average landmark analysis from time 12 months until the end of the study (as is discussed <a href="https://arxiv.org/abs/2007.04767">here</a>).</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="co"># Modestly-weighted log-rank test (t* = 12)</span></a>
@@ -652,11 +652,11 @@ body {
 <a class="sourceLine" id="cb4-3" data-line-number="3">                    <span class="dt">model =</span> model,</a>
 <a class="sourceLine" id="cb4-4" data-line-number="4">                    <span class="dt">recruitment =</span> recruitment,</a>
 <a class="sourceLine" id="cb4-5" data-line-number="5">                    <span class="dt">dco_final =</span> <span class="dv">30</span>,</a>
-<a class="sourceLine" id="cb4-6" data-line-number="6">                    <span class="dt">alpha_one_sided =</span> <span class="fl">0.025</span>)[<span class="kw">c</span>(<span class="st">&quot;overall_power&quot;</span>, <span class="st">&quot;expected_events&quot;</span>)]</a>
+<a class="sourceLine" id="cb4-6" data-line-number="6">                    <span class="dt">alpha_one_sided =</span> <span class="fl">0.025</span>)[<span class="kw">c</span>(<span class="st">&quot;overall_power&quot;</span>, <span class="st">&quot;n_events&quot;</span>)]</a>
 <a class="sourceLine" id="cb4-7" data-line-number="7"><span class="co">#&gt; $overall_power</span></a>
 <a class="sourceLine" id="cb4-8" data-line-number="8"><span class="co">#&gt; [1] 0.9155788</span></a>
 <a class="sourceLine" id="cb4-9" data-line-number="9"><span class="co">#&gt; </span></a>
-<a class="sourceLine" id="cb4-10" data-line-number="10"><span class="co">#&gt; $expected_events</span></a>
+<a class="sourceLine" id="cb4-10" data-line-number="10"><span class="co">#&gt; $n_events</span></a>
 <a class="sourceLine" id="cb4-11" data-line-number="11"><span class="co">#&gt; [1] 347.5672</span></a></code></pre></div>
 <h2 id="2-stage-designs">2-stage designs</h2>
 <p>Now suppose we want to add an interim analysis after 18 months. We need to choose how much alpha to spend at the interim. By default the package uses a Lan-DeMets O’Brien-Fleming spending function, and that is what we’ll use in this example. Firstly, for the standard log-rank test…</p>
@@ -725,7 +725,7 @@ body {
 <a class="sourceLine" id="cb7-12" data-line-number="12">                                              <span class="st">&quot;overall_power&quot;</span>,</a>
 <a class="sourceLine" id="cb7-13" data-line-number="13">                                              <span class="st">&quot;expected_t&quot;</span>)]</a>
 <a class="sourceLine" id="cb7-14" data-line-number="14"><span class="co">#&gt; $critical_values</span></a>
-<a class="sourceLine" id="cb7-15" data-line-number="15"><span class="co">#&gt; [1] -2.325146 -2.170453 -2.048391</span></a>
+<a class="sourceLine" id="cb7-15" data-line-number="15"><span class="co">#&gt; [1] -2.325146 -2.170453 -2.046141</span></a>
 <a class="sourceLine" id="cb7-16" data-line-number="16"><span class="co">#&gt; </span></a>
 <a class="sourceLine" id="cb7-17" data-line-number="17"><span class="co">#&gt; $p_first_int_stop</span></a>
 <a class="sourceLine" id="cb7-18" data-line-number="18"><span class="co">#&gt; under_alternative under_null_approx </span></a>
@@ -736,7 +736,7 @@ body {
 <a class="sourceLine" id="cb7-23" data-line-number="23"><span class="co">#&gt;       0.355540272       0.008404153 </span></a>
 <a class="sourceLine" id="cb7-24" data-line-number="24"><span class="co">#&gt; </span></a>
 <a class="sourceLine" id="cb7-25" data-line-number="25"><span class="co">#&gt; $overall_power</span></a>
-<a class="sourceLine" id="cb7-26" data-line-number="26"><span class="co">#&gt; [1] 0.7740606</span></a>
+<a class="sourceLine" id="cb7-26" data-line-number="26"><span class="co">#&gt; [1] 0.7747065</span></a>
 <a class="sourceLine" id="cb7-27" data-line-number="27"><span class="co">#&gt; </span></a>
 <a class="sourceLine" id="cb7-28" data-line-number="28"><span class="co">#&gt; $expected_t</span></a>
 <a class="sourceLine" id="cb7-29" data-line-number="29"><span class="co">#&gt; under_alternative under_null_approx </span></a>
@@ -756,7 +756,7 @@ body {
 <a class="sourceLine" id="cb8-12" data-line-number="12">                                              <span class="st">&quot;overall_power&quot;</span>,</a>
 <a class="sourceLine" id="cb8-13" data-line-number="13">                                              <span class="st">&quot;expected_t&quot;</span>)]</a>
 <a class="sourceLine" id="cb8-14" data-line-number="14"><span class="co">#&gt; $critical_values</span></a>
-<a class="sourceLine" id="cb8-15" data-line-number="15"><span class="co">#&gt; [1] -2.680399 -2.226216 -1.988807</span></a>
+<a class="sourceLine" id="cb8-15" data-line-number="15"><span class="co">#&gt; [1] -2.680399 -2.226216 -1.988668</span></a>
 <a class="sourceLine" id="cb8-16" data-line-number="16"><span class="co">#&gt; </span></a>
 <a class="sourceLine" id="cb8-17" data-line-number="17"><span class="co">#&gt; $p_first_int_stop</span></a>
 <a class="sourceLine" id="cb8-18" data-line-number="18"><span class="co">#&gt; under_alternative under_null_approx </span></a>
@@ -767,7 +767,7 @@ body {
 <a class="sourceLine" id="cb8-23" data-line-number="23"><span class="co">#&gt;        0.51090994        0.01068565 </span></a>
 <a class="sourceLine" id="cb8-24" data-line-number="24"><span class="co">#&gt; </span></a>
 <a class="sourceLine" id="cb8-25" data-line-number="25"><span class="co">#&gt; $overall_power</span></a>
-<a class="sourceLine" id="cb8-26" data-line-number="26"><span class="co">#&gt; [1] 0.9133178</span></a>
+<a class="sourceLine" id="cb8-26" data-line-number="26"><span class="co">#&gt; [1] 0.9133394</span></a>
 <a class="sourceLine" id="cb8-27" data-line-number="27"><span class="co">#&gt; </span></a>
 <a class="sourceLine" id="cb8-28" data-line-number="28"><span class="co">#&gt; $expected_t</span></a>
 <a class="sourceLine" id="cb8-29" data-line-number="29"><span class="co">#&gt; under_alternative under_null_approx </span></a>
