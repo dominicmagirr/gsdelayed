@@ -3,18 +3,36 @@ single_stage_sim_1 <- function(dummy = 1,
 
   model <- design$model
   recruitment <- design$recruitment
-  t_star <- design$t_star
+
 
   df_uncensored <- sim_t_uncensored(model, recruitment)
   df_final <- apply_dco(df_uncensored, events = ceiling(design$n_events[1]))
 
 
-  wlrt_final <- wlrt(df_final,
-                     trt_colname = "group",
-                     time_colname = "time",
-                     event_colname = "event",
-                     wlr = "mw",
-                     t_star = t_star)
+  if (!is.null(design$t_star)){
+    t_star <- design$t_star
+
+
+    wlrt_final <- wlrt(df_final,
+                       trt_colname = "group",
+                       time_colname = "time",
+                       event_colname = "event",
+                       wlr = "mw",
+                       t_star = t_star)
+
+  }
+  else {
+    rho <- design$rho
+    gamma <- design$gamma
+
+    wlrt_final <- wlrt(df_final,
+                       trt_colname = "group",
+                       time_colname = "time",
+                       event_colname = "event",
+                       wlr = "fh",
+                       rho = rho,
+                       gamma = gamma)
+  }
 
   data.frame(c_1 = design$critical_values,
              z_1 = wlrt_final$z,

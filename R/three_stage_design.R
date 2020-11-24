@@ -3,6 +3,8 @@
 #' Three-stage design for a modestly-weighted log-rank test
 #'
 #' @param t_star Parameter of the modestly-weighted log-rank test. Setting t_star=0 corresponds to a standard log-rank test.
+#' @param{rho} rho parameter in a Fleming-Harrington test. Default is NULL. Only used if F-H test used instead of MWLRT.
+#' @param{gamma} gamma parameter in a Fleming-Harrington test. Default is NULL. Only used if F-H test used instead of MWLRT.
 #' @param model The piecewise hazard model.
 #'   A list containing the \code{change_points} and \code{lambdas}.
 #' @param recruitment List of recruitment information.
@@ -25,7 +27,9 @@
 #' @export
 
 
-three_stage_design <- function(t_star,
+three_stage_design <- function(t_star = NULL,
+                               rho = NULL,
+                               gamma = NULL,
                                model,
                                recruitment,
                                dco_int_1,
@@ -37,6 +41,10 @@ three_stage_design <- function(t_star,
                                alpha_one_sided = 0.025,
                                alpha_spend_f = ldobf,
                                length_t = 18){
+
+  if (all(is.null(c(t_star, rho, gamma)))) stop("Either t_star or rho, gamma must be specified")
+  if (is.null(t_star) && is.null(rho)) stop("rho and gamma must be specified")
+  if (is.null(t_star) && is.null(gamma)) stop("rho and gamma must be specified")
 
   if (is.null(dco_int_1) && is.null(events_int_1)) stop("Either dco_int_1 or events_int_1 must be specified.")
   if (is.null(dco_int_2) && is.null(events_int_2)) stop("Either dco_int_2 or events_int_2 must be specified.")
@@ -62,6 +70,8 @@ three_stage_design <- function(t_star,
   #####################################
 
   final_analysis <- ncp_power(t_star = t_star,
+                              rho = rho,
+                              gamma = gamma,
                               model = model,
                               recruitment = recruitment,
                               dco = dco_final,
@@ -71,6 +81,8 @@ three_stage_design <- function(t_star,
   ######################################
 
   interim_analysis_2 <- ncp_power(t_star = t_star,
+                                  rho = rho,
+                                  gamma = gamma,
                                   model = model,
                                   recruitment = recruitment,
                                   dco = dco_int_2,
@@ -79,6 +91,8 @@ three_stage_design <- function(t_star,
   ######################################
 
   interim_analysis_1 <- ncp_power(t_star = t_star,
+                                  rho = rho,
+                                  gamma = gamma,
                                   model = model,
                                   recruitment = recruitment,
                                   dco = dco_int_1,
@@ -173,6 +187,8 @@ three_stage_design <- function(t_star,
                  interim_2 = interim_analysis_2$ncp,
                  final = final_analysis$ncp),
        t_star = t_star,
+       rho = rho,
+       gamma = gamma,
        model = model,
        recruitment = recruitment)
 

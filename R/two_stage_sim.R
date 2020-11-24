@@ -3,26 +3,51 @@ two_stage_sim_1 <- function(dummy = 1,
 
   model <- design$model
   recruitment <- design$recruitment
-  t_star <- design$t_star
+
 
   df_uncensored <- sim_t_uncensored(model, recruitment)
   df_interim <- apply_dco(df_uncensored, events = ceiling(design$n_events[1]))
   df_final <- apply_dco(df_uncensored, events = ceiling(design$n_events[2]))
 
-  wlrt_interim <- wlrt(df_interim,
+  if (!is.null(design$t_star)){
+    t_star <- design$t_star
+
+    wlrt_interim <- wlrt(df_interim,
+                         trt_colname = "group",
+                         time_colname = "time",
+                         event_colname = "event",
+                         wlr = "mw",
+                         t_star = t_star)
+
+
+    wlrt_final <- wlrt(df_final,
                        trt_colname = "group",
                        time_colname = "time",
                        event_colname = "event",
                        wlr = "mw",
                        t_star = t_star)
+  }
+  else {
+    rho <- design$rho
+    gamma <- design$gamma
+
+    wlrt_interim <- wlrt(df_interim,
+                         trt_colname = "group",
+                         time_colname = "time",
+                         event_colname = "event",
+                         wlr = "fh",
+                         rho = rho,
+                         gamma = gamma)
 
 
-  wlrt_final <- wlrt(df_final,
-                     trt_colname = "group",
-                     time_colname = "time",
-                     event_colname = "event",
-                     wlr = "mw",
-                     t_star = t_star)
+    wlrt_final <- wlrt(df_final,
+                       trt_colname = "group",
+                       time_colname = "time",
+                       event_colname = "event",
+                       wlr = "fh",
+                       rho = rho,
+                       gamma = gamma)
+  }
 
 
   c_1 <- crit_1_of_2(var_u_int = wlrt_interim$v_u,

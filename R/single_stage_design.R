@@ -3,6 +3,8 @@
 #' Single-stage design for a modestly-weighted log-rank test
 #'
 #' @param t_star Parameter of the modestly-weighted log-rank test. Setting t_star=0 corresponds to a standard log-rank test.
+#' @param{rho} rho parameter in a Fleming-Harrington test. Default is NULL. Only used if F-H test used instead of MWLRT.
+#' @param{gamma} gamma parameter in a Fleming-Harrington test. Default is NULL. Only used if F-H test used instead of MWLRT.
 #' @param model The piecewise hazard model.
 #'   A list containing the \code{change_points} and \code{lambdas}.
 #' @param recruitment List of recruitment information.
@@ -19,13 +21,19 @@
 #' @return A list describing the design.
 #' @export
 
-single_stage_design <- function(t_star,
+single_stage_design <- function(t_star = NULL,
+                                rho = NULL,
+                                gamma = NULL,
                                 model,
                                 recruitment,
                                 dco_final,
                                 events_final = NULL,
                                 alpha_one_sided = 0.025,
                                 length_t = 18){
+
+  if (all(is.null(c(t_star, rho, gamma)))) stop("Either t_star or rho, gamma must be specified")
+  if (is.null(t_star) && is.null(rho)) stop("rho and gamma must be specified")
+  if (is.null(t_star) && is.null(gamma)) stop("rho and gamma must be specified")
 
   if (is.null(dco_final) && is.null(events_final)) stop("Either dco_final or events_final must be specified.")
 
@@ -38,6 +46,8 @@ single_stage_design <- function(t_star,
 
 
   final_analysis <- ncp_power(t_star = t_star,
+                              rho = rho,
+                              gamma = gamma,
                               model = model,
                               recruitment = recruitment,
                               dco = dco_final,
@@ -56,6 +66,8 @@ single_stage_design <- function(t_star,
        var_u = final_analysis$var_u,
        ncp_z = final_analysis$ncp,
        t_star = t_star,
+       rho = rho,
+       gamma = gamma,
        model = model,
        recruitment = recruitment)
 
