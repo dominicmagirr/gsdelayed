@@ -3,8 +3,6 @@
 #' Three-stage design for a modestly-weighted log-rank test
 #'
 #' @param t_star Parameter of the modestly-weighted log-rank test. Setting t_star=0 corresponds to a standard log-rank test.
-#' @param{rho} rho parameter in a Fleming-Harrington test. Default is NULL. Only used if F-H test used instead of MWLRT.
-#' @param{gamma} gamma parameter in a Fleming-Harrington test. Default is NULL. Only used if F-H test used instead of MWLRT.
 #' @param model The piecewise hazard model.
 #'   A list containing the \code{change_points} and \code{lambdas}.
 #' @param recruitment List of recruitment information.
@@ -23,13 +21,13 @@
 #' @param alpha_one_sided One-sided alpha level.
 #' @param alpha_spending_f The alpha-spending function. Default is the Lan-DeMets O'Brien-Fleming function.
 #' @param length_t Number of cutpoints to use when approximating the distribution of the MWLRT-statistic. Default is 18. Can be increased for greater accuracy.
+#' @param{rho} rho parameter in a Fleming-Harrington test. Default is NULL. Only used if F-H test used instead of MWLRT.
+#' @param{gamma} gamma parameter in a Fleming-Harrington test. Default is NULL. Only used if F-H test used instead of MWLRT.
 #' @return A list describing the design.
 #' @export
 
 
 three_stage_design <- function(t_star = NULL,
-                               rho = NULL,
-                               gamma = NULL,
                                model,
                                recruitment,
                                dco_int_1,
@@ -40,7 +38,9 @@ three_stage_design <- function(t_star = NULL,
                                events_final = NULL,
                                alpha_one_sided = 0.025,
                                alpha_spend_f = ldobf,
-                               length_t = 18){
+                               length_t = 18,
+                               rho = NULL,
+                               gamma = NULL){
 
   if (all(is.null(c(t_star, rho, gamma)))) stop("Either t_star or rho, gamma must be specified")
   if (is.null(t_star) && is.null(rho)) stop("rho and gamma must be specified")
@@ -112,7 +112,8 @@ three_stage_design <- function(t_star = NULL,
 
   #######################################
   crit_1 <- qnorm(1 - cumulative_spend[1])
-  crit_2 <- uniroot(find_crit_2, c(0, 10),
+  crit_2 <- uniroot(find_crit_2,
+                    c(0, 10),
                     crit_1 = crit_1,
                     info_frac = interim_analysis_1$var_u / interim_analysis_2$var_u,
                     alpha_one_sided = cumulative_spend[2])$root
@@ -190,7 +191,8 @@ three_stage_design <- function(t_star = NULL,
        rho = rho,
        gamma = gamma,
        model = model,
-       recruitment = recruitment)
+       recruitment = recruitment,
+       dco = c(dco_int_1, dco_int_2, dco_final))
 
 }
 

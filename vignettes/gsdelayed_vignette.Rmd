@@ -31,25 +31,24 @@ Suppose we are designing a RCT where we expect a delayed treatment effect on sur
 
 ```{r}
 #library(gsdelayed)
-
 t_seq <- seq(0,36, length.out = 100)
 s_c <- purrr::map_dbl(t_seq, surv_pieces_simple, change_points = c(6), lambdas = log(2) / c(9, 9))
 s_e <- purrr::map_dbl(t_seq, surv_pieces_simple, change_points = c(6), lambdas = log(2) / c(9, 16))
 
 plot(t_seq, s_c, ylim = c(0,1), type = "l", 
      xlab = "time (months)", ylab = "survival",
-     main = "Alternative hypothesis in an immuno-oncology RCT")
+     main = "Alternative (NPH)")
 points(t_seq, s_e, lty = 2, type = "l")
-legend("topright", c("experimental", "control"), lty = 2:1)
+legend("topright", c("E", "C"), lty = 2:1)
 ```
 
 ## What sample size do we need?
 
 In a time-to-event setting, sample size calculations are never straightforward, because power has a complex relationship with the event distributions and censoring distributions. The latter is driven primarily by the recruitment assumptions and length of follow-up. 
 
-A large pharmaceutical company may be in the fortunate position that they can "choose" a recruitment rate to ensure the study is completed in a timely manner. For example, suppose we require recruiment to last no longer than 12 months, and the whole study to last no longer than 30 months. We can try out multiple recruitment rates to see which gives us sufficient power.
+If the sponsor of the study has large resources, they may be able to "choose" a recruitment rate to ensure that the study is completed in a timely manner. For example, suppose we require recruiment to last no longer than 12 months, and the whole study to last no longer than 30 months. We can try out multiple recruitment rates to see which gives us sufficient power.
 
-In the following, we compare two test statistics in a single-stage design. The first is a standard log-rank statistic. The second is a modestly-weighted log-rank statistic with $t^* = 12$. Loosely speaking this is like doing an average landmark analysis from 12 months until the maximum follow-up time (as is described [here](https://arxiv.org/abs/2007.04767)).
+In the following, we compare three test statistics in a single-stage design. The first is a standard log-rank statistic. The second is a modestly-weighted log-rank statistic with $t^* = 12$. Loosely speaking this is like doing an average landmark analysis from 12 months until the maximum follow-up time (as is described [here](https://arxiv.org/abs/2007.04767)). The third is a Fleming-Harrington-(0,1) test.
 
 
 ```{r}
@@ -83,14 +82,25 @@ single_stage_options_mwlrt <- recruitment_options %>%
              dco_final = 30,
              alpha_one_sided = 0.025)
 
+## Fleming-Harrington(0,1)
+single_stage_options_fh <- recruitment_options %>% 
+  purrr::map(gsdelayed::single_stage_design,
+             t_star = NULL,
+             model = model,
+             dco_final = 30,
+             alpha_one_sided = 0.025,
+             rho = 0,
+             gamma = 1)
+
 ## compare power
 data.frame(n_per_arm = seq(150, 350, by = 50),
            power_lrt = purrr::map_dbl(single_stage_options_lrt, function(x) round(x$overall_power, 2)),
-           power_mwlrt = purrr::map_dbl(single_stage_options_mwlrt, function(x) round(x$overall_power, 2)))
+           power_mwlrt = purrr::map_dbl(single_stage_options_mwlrt, function(x) round(x$overall_power, 2)),
+           power_fh_01 = purrr::map_dbl(single_stage_options_fh, function(x) round(x$overall_power, 2)))
 
 ```
 
-In this case, if we use the standard log-rank statistic then we need 300 patients per arm for 90% power. If we use the modestly-weighted log-rank statistic then we need around 220 patients per arm.
+In this case, if we use the standard log-rank statistic then we need 300 patients per arm for 90% power. If we use the modestly-weighted log-rank statistic then we need around 220 patients per arm. If we use the Fleming-Harrington test we would need a bit less than 200 per arm.
 
 Note that if we were not able to vary the recruitment rate, we could have instead varied the length of recruitment and/or the timing of the data-cut off until we found something with satisfactory power.
 
@@ -144,6 +154,87 @@ single_stage_mwlrt[c("critical_values",
                      "ncp_z")]
 ```
 
+and for the Fleming-Harrington-(0,1) test:
+
+```{r}
+recruitment_fh <- list(n_0 = 185, n_1 = 185, r_period = 12, k = 1)
+
+single_stage_fh <- gsdelayed::single_stage_design(t_star = NULL,
+                                                  model = model,
+                                                  recruitment = recruitment_fh,
+                                                  dco_final = 30,
+                                                  alpha_one_sided = 0.025,
+                                                  rho = 0,
+                                                  gamma = 1)
+
+single_stage_fh[c("critical_values",
+                  "overall_power",
+                  "n_events",
+                  "var_u",
+                  "ncp_z")]
+```
+
+
+
+### Proportional Hazards
+
+Let's look at how robust the designs are to the delayed-effect assumption by assessing their power under proportional hazards. 
+
+
+```{r}
+
+t_seq <- seq(0,36, length.out = 100)
+s_c <- purrr::map_dbl(t_seq, surv_pieces_simple, change_points = c(6), lambdas = log(2) / c(9, 9))
+s_e <- purrr::map_dbl(t_seq, surv_pieces_simple, change_points = c(6), lambdas = log(2) / c(13, 13))
+
+plot(t_seq, s_c, ylim = c(0,1), type = "l", 
+     xlab = "time (months)", ylab = "survival",
+     main = "Alternative (PH)")
+points(t_seq, s_e, lty = 2, type = "l")
+legend("topright", c("E", "C"), lty = 2:1)
+```
+
+To have a fair comparison, we use the same sample size (220 per arm) for all three tests:
+
+
+```{r}
+## alternative hypothesis (ph)
+model_ph = list(change_points = c(6),
+                lambdas_0 = c(log(2) / 9, log(2) / 9),
+                lambdas_1 = c(log(2) / 13, log(2) / 13))
+
+
+
+single_stage_lrt_ph <- gsdelayed::single_stage_design(t_star = 0,
+                                                   model = model_ph,
+                                                   recruitment = recruitment_mwlrt,
+                                                   dco_final = 30,
+                                                   alpha_one_sided = 0.025)
+
+single_stage_mwlrt_ph <- gsdelayed::single_stage_design(t_star = 12,
+                                                     model = model_ph,
+                                                     recruitment = recruitment_mwlrt,
+                                                     dco_final = 30,
+                                                     alpha_one_sided = 0.025)
+
+single_stage_fh_ph <- gsdelayed::single_stage_design(t_star = NULL,
+                                                  model = model_ph,
+                                                  recruitment = recruitment_mwlrt,
+                                                  dco_final = 30,
+                                                  alpha_one_sided = 0.025,
+                                                  rho = 0,
+                                                  gamma = 1)
+
+
+single_stage_lrt_ph["overall_power"]
+single_stage_mwlrt_ph["overall_power"]
+single_stage_fh_ph["overall_power"]
+
+
+```
+
+We see that the MWLRT is quite robust, in the sense of being almost as powerful as the standard logrank test under proportional hazards. Whereas the Fleming-Harrington-(0,1) is not robust in case there is no delay in the effect. The Fleming-Harrington-(0,1) test also has a type 1 error issue (see https://arxiv.org/abs/2007.04767). For these reasons, we will not consider it further here.
+
 
 
 ## Two-stage designs
@@ -156,8 +247,6 @@ Let's explore adding an interim analysis in order to reduce the expected duratio
 It is straightforward to vary these parameters and check the operating characteristics of such a design. By default, a Lan-DeMets O'Brien-Fleming spending function is used, but any spending function can be specified by the user. Let's start by considering an interim analysis at 18 months, using the default spending function. Again, we consider using both a standard log-rank statistic, and a modestly-weighted log-rank statistic
 
 ```{r}
-
-
 two_stage_lrt <- gsdelayed::two_stage_design(t_star = 0,
                                              model = model,
                                              recruitment = recruitment_lrt,
@@ -187,24 +276,255 @@ two_stage_lrt[c("critical_values",
                 "ncp_z")]
 ```
 
-The critical values for the z-statistic are -2.33 at the interim and -2.03 at the final analysis. This compares with -1.96 for the single-stage design. The probability of stopping early is $pr(Z < -2.33) = 0.27$ under the alternative hypothesis. The probability of early stopping under the null hypothesis is approximated by assuming the non-centrality parameter is $0$, and using the same critical values. This is described as "approx" because the critical values depend on var$(U)$, which is calculated under the alternative. In more detail, the interim critical value $c_1$ is calculated as $\Phi^{-1}(\alpha^*)$, where the interim spend $\alpha^*$ is found via
+The critical values for the z-statistic are -2.33 at the interim and -2.03 at the final analysis. This compares with -1.96 for the single-stage design. The probability of stopping early is $pr(Z < -2.33) = 0.27$ under the alternative hypothesis. The probability of early stopping under the null hypothesis is approximated by assuming the non-centrality parameter is $0$, and using the same critical values and variance structure. This is described as "approx" because the critical values depend on var$(U)$, which is calculated under the alternative. In more detail, the interim critical value $c_1$ is calculated as $\Phi^{-1}(\alpha^*)$, where the interim spend $\alpha^*$ is found via
 
 $$f^{SF}(\text{var}(U_{\text{int}}) / \text{var}(U_{\text{final}}))$$
 
 where $f^{SF}$ is the spending function, and $\text{var}(U_{\text{int}})$ and $\text{var}(U_{\text{int}})$ are the anticipated variance of the U-statistic at the interim- and final-analyses, assuming the alternative hypothesis, found via numerical integration in `gsdelayed::two_stage_design`.
 
-Similarly, the final critical value $c_2$ is found via a call to `mvtnorm::pmvnorm`.
+Similarly, the final critical value $c_2$ is found via a call to `mvtnorm::pmvnorm`, keeping the overall type 1 error rate controlled.
 
-DETAILS HERE
+
+## Futility
+
+Designs and operating characteristics are calculated assuming there is no futility boundary. It is straightforward to add a (non-binding) futility boundary at the time of an interim analysis. This is done by specifying a value of the point estimate of the observed "hazard ratio" that would lead to a futility stop, e.g. `hr_threshold = 1` in the code below. 
+
+Note that a futility criterion may be of limited value in this type of trial. If the interim analysis occurs relatively late (as in the example below) then all patients may have been recruited and most of the costs of the study incurred, such that there is little point in stopping for futility. On the other hand, if the interim analysis occurs relatively early then it would be dangerous to apply a stringent futility criterion, given the anticipated delayed effect. Of course, all of these trials will be monitored by an independent data safety and monitoring board, such that a trial where the experimental drug is clearly harmful will be stopped promptly.
+
+```{r}
+two_stage_lrt_futility <- futility_two_stage(two_stage_lrt, hr_threshold = 1)
+
+two_stage_lrt_futility[c("critical_values",
+                         "p_early_stop",
+                         "p_early_stop_futility",
+                         "overall_power")]
+```
+One can see here, that the probability of stopping for futility is 0.5 (of course) under the null hypothesis, and 0.04 under the alternative, leading to a reduction in the expected duration of the study, and a small reduction in power.
+
 
 ## Implementation
 
+When conducting the group-sequential test, the information levels at the interim and final analyses will differ somewhat from their planned values. This can be dealt with using the alpha-spending approach.
 
-EXPLAIN HOW TO PERFORM THE GROUP-SEQUENTIAL TEST, WHEN THE ACTUAL AMOUNT OF INFORMATION DIFFERS FROM THE ANTICIPATED VALUES
+
+Let's try it for the modestly-weighted test with $t^*=12$. We can simulate some data according to our model and recruitment assumtions, without applying a data cut-off.
+
+```{r}
+set.seed(23)
+dat_uncensored <- gsdelayed::sim_t_uncensored(model = model, 
+                                              recruitment = recruitment_mwlrt)
+
+head(dat_uncensored)
+```
+
+We can get the interim analysis data set by applying a data cut-off at month 18:
+
+```{r}
+dat_interim <- gsdelayed::apply_dco(dat_uncensored, dco = 18)
+head(dat_interim)
+```
+
+Next we calculate the observed information fraction, defined as $\hat{V}(U_{\text{int}})  / \tilde{V}(U_{\text{final}})$, where the numerator is the observed variance of the U-statistic at the interim analysis, and the denominator is the planned variance of the U-statistic at the final analysis.
+
+We can perform the modestly-weighted log-rank test and extract the variance of the U-statistic...
+
+```{r}
+wlrt_interim <-gsdelayed::wlrt(dat_interim,
+                               trt_colname = "group",
+                               time_colname = "time",
+                               event_colname = "event",
+                               wlr = "mw",
+                               t_star = 12)
+
+wlrt_interim$v_u
+```
+The planned variance of the final U-statistic is...
+
+```{r}
+two_stage_mwlrt$var_u[2]
+```
+giving an observed information fraction of...
+
+```{r}
+info_frac <- wlrt_interim$v_u / two_stage_mwlrt$var_u[2]
+info_frac
+```
+
+which can then be fed into the spending-function to get the interim alpha spend...
+
+```{r}
+int_alpha_spend <- gsdelayed::ldobf(info_frac, alpha_one_sided = 0.025)
+int_alpha_spend
+```
+
+which corresponds to a critical value of the Z-statistic scale of...
+
+```{r}
+crit_1 <- qnorm(int_alpha_spend)
+crit_1
+```
+
+In fact, the previous three steps could be achieved with a single helper function `crit_1_of_2`:
+
+```{r}
+gsdelayed::crit_1_of_2(var_u_int = wlrt_interim$v_u,
+                       design = two_stage_mwlrt,
+                       alpha_spend_f = ldobf,
+                       alpha_one_sided = 0.025)
+```
+
+
+The observed interim value of Z is...
+
+```{r}
+wlrt_interim$z
+```
+In this case, the Z-value is not low enough to reject the null hypothesis at interim and the trial would continue to the final analysis. The final analysis has a data cut off at 30 months:
+
+```{r}
+dat_final <- gsdelayed::apply_dco(dat_uncensored, dco = 30)
+head(dat_final)
+```
+
+
+At this point, we can re-estimate the information fraction as $\hat{V}(U_{\text{int}})  / \hat{V}(U_{\text{final}})$ where the denominator is now the observed variance of the U-statistic, which in this case is...
+
+```{r}
+wlrt_final <- wlrt(dat_final,
+                   trt_colname = "group",
+                   time_colname = "time",
+                   event_colname = "event",
+                   wlr = "mw",
+                   t_star = 12)
+
+wlrt_final$v_u
+```
+giving an observed information fraction of 
+
+```{r}
+info_frac_final <- wlrt_interim$v_u / wlrt_final$v_u
+info_frac_final
+```
+
+which can then be used (in conjunction with the interim critical value) to find the final critical value for the Z-statistic...
+
+```{r}
+find_crit_2 <- function(x){
+  mvtnorm::pmvnorm(lower = c(crit_1, x),
+                   upper = c(Inf, Inf),
+                   sigma = matrix(c(1, sqrt(info_frac_final),
+                                    sqrt(info_frac_final), 1), nrow = 2))[1] - (1 - 0.025)
+}
+crit_2 <- uniroot(find_crit_2, c(-10,10))$root
+crit_2
+```
+
+Again, the previous three steps could be achieved with a single call to the helper function `crit_2_of_2`:
+
+```{r}
+crit_2_of_2(var_u_int = wlrt_interim$v_u,
+            var_u_final = wlrt_final$v_u,
+            design = two_stage_mwlrt,
+            alpha_spend_f = ldobf,
+            alpha_one_sided = 0.025)
+```
+
+
+The observed final Z-value is 
+
+```{r}
+wlrt_final$z
+```
+which is lower than the critical value, so we can reject the null hypothesis. 
+
+
+All of the preceeding steps are brought together in the function `two_stage_sim`. This allows us to double check that the operating characteristics really match those found via numerical integration in `two_stage_design`.
+
+Here, for example, is the output for 10 simulations. It's clear how we could count the number of times that the critical values are exceeded, and find the average duration of the study.
+
+```{r}
+two_stage_sim(n_sims = 10, design = two_stage_mwlrt)
+```
+
+
 
 ## Extension to 3-stage design
 
-BRIEF DESCRIPTION. NOT VERY INTERESTING HAVING DESCRIBED TWO-STAGE DESIGN IN DETAIL
+The `gsdelayed` package also includes three-stage designs. Everything is more-or-less analagous to a two-stage design. To give a quick example, suppose we want to add an earlier interim analysis at 12 months, and let's also think about a custom alpha-spending function.
+
+
+### Custom alpha-spending function
+
+A custom alpha-spending function must have two arguments: `t`, the information fraction, a number between 0 and 1; and `alpha_one_sided`, the one-sided alpha level. The function must be monotonic non-decreasing from $0$ at $t = 0$, to `alpha_one_sided` at $t = 1$.  That's it.
+
+Suppose, for example, we do not want to spend any alpha when the information fraction is below 0.4, but for $t>4$, we want the cumulative alpha spend to be proportional to $t$. This could be achieved thus:
+
+```{r}
+## custom alpha-spending function
+custom_asf <- function(t, alpha_one_sided = 0.025) t * (t > 0.4) * alpha_one_sided
+```
+
+which can now be used in the design
+
+```{r}
+three_stage_mwlrt <- three_stage_design(t_star = 12,
+                                        model = model,
+                                        recruitment = recruitment_mwlrt,
+                                        dco_int_1 = 12,
+                                        dco_int_2 = 18,
+                                        dco_final = 30,
+                                        alpha_spend_f = custom_asf,
+                                        alpha_one_sided = 0.025)
+
+
+three_stage_mwlrt[c("critical_values",
+                    "p_first_int_stop",
+                    "p_second_int_stop",
+                    "overall_power",
+                    "expected_t")]
+```
+
+
+It seems a bit pointless adding an interim where we don't spend any alpha, but this was do demonstrate how we can add a pure futility interim analysis by considering a threshold for the observed "HR" at the first interim, where we would call futility, e.g.,
+
+```{r}
+three_stage_mwlrt_futility <- futility_three_stage(three_stage_mwlrt, 
+                                                   hr_threshold_1 = 1.1,
+                                                   hr_threshold_2 = Inf)
+
+three_stage_mwlrt_futility
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

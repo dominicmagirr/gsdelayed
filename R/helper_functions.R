@@ -150,11 +150,13 @@ crit_3_of_3 <- function(var_u_final,
 ##############################################
 #############################################
 find_crit_3 <- function(x, crit_1, crit_2, info_frac_1, info_frac_2, alpha_one_sided = 0.025){
+
   1 - mvtnorm::pmvnorm(lower = c(-Inf, -Inf, -Inf),
-                       upper = c(crit_1, crit_1, x),
+                       upper = c(crit_1, crit_2, x),
                        sigma = matrix(c(1, sqrt(info_frac_1 / info_frac_2), sqrt(info_frac_1),
                                         sqrt(info_frac_1 / info_frac_2), 1, sqrt(info_frac_2),
                                         sqrt(info_frac_1), sqrt(info_frac_2), 1), nrow = 3))[1] - alpha_one_sided
+
 }
 
 ############################################

@@ -48,7 +48,7 @@ w <- function(t, t_star, recruitment, model){
 
 w_fh <- function(t, rho, gamma, recruitment, model){
 
-  s_bar(pmin(t, t_star), recruitment, model) ^ rho * (1 - s_bar(pmin(t, t_star), recruitment, model)) ^ gamma
+  s_bar(t, recruitment, model) ^ rho * (1 - s_bar(t, recruitment, model)) ^ gamma
 
 }
 
@@ -81,7 +81,7 @@ w_fh <- function(t, rho, gamma, recruitment, model){
 #'           }
 #' @export
 
-ncp_power <- function(t_star,
+ncp_power <- function(t_star = NULL,
                       rho = NULL,
                       gamma = NULL,
                       model,
@@ -92,7 +92,7 @@ ncp_power <- function(t_star,
 
 
 
-  if (is.null(rho) && is.null(gamma)){
+  if (!is.null(t_star)){
     return(ncp_power_t_star(t_star = t_star,
                             model = model,
                             recruitment = recruitment,
