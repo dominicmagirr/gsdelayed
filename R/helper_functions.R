@@ -168,6 +168,62 @@ find_crit_2 <- function(x, crit_1, info_frac, alpha_one_sided = 0.025){
 }
 
 
+############################################
+#' Stage-wise p-value at 2nd analysis
+#'
+#' Find the stage-wise one-sided value, when a trial has crossed efficacy boundary at the second analysis.
+#'
+#' @param crit_1 Critical value at first analysis. Expecting a negative number.
+#' @param z_2 The observed z-statistic at the second analysis..
+#' @param v_1 The observed variance of the u-statistic at the first analysis.
+#' @param v_2 The observed variance of the u-statistic at the second analysis.
+#' @export
+#'
+
+stagewise_p_2 <- function(crit_1,
+                          z_2,
+                          v_1,v_2){
+
+  info_frac <- v_1 / v_2
+
+  1 - mvtnorm::pmvnorm(lower = c(-Inf, -Inf),
+                       upper = c(-crit_1, -z_2),
+                       sigma = matrix(c(1, sqrt(info_frac),
+                                        sqrt(info_frac), 1), nrow = 2))[1]
+
+}
+
+############################################
+#' Stage-wise p-value at 3rd analysis
+#'
+#' Find the stage-wise one-sided value, when a trial has crossed efficacy boundary at the third analysis.
+#'
+#' @param crit_1 Critical value at first analysis. Expecting a negative number.
+#' @param crit_2 Critical value at second analysis. Expecting a negative number.
+#' @param z_3 The observed z-statistic at the third analysis..
+#' @param v_1 The observed variance of the u-statistic at the first analysis.
+#' @param v_2 The observed variance of the u-statistic at the second analysis.
+#' @param v_3 The observed variance of the u-statistic at the third analysis.
+#' @export
+#'
+stagewise_p_3 <- function(crit_1,
+                          crit_2,
+                          z_3,
+                          v_1,v_2,v_3){
+
+  info_frac_1 <- v_1 / v_3
+  info_frac_2 <- v_2 / v_3
+
+  1 - mvtnorm::pmvnorm(lower = c(-Inf, -Inf, -Inf),
+                       upper = c(-crit_1, -crit_2, -z_3),
+                       sigma = matrix(c(1, sqrt(info_frac_1 / info_frac_2), sqrt(info_frac_1),
+                                        sqrt(info_frac_1 / info_frac_2), 1, sqrt(info_frac_2),
+                                        sqrt(info_frac_1), sqrt(info_frac_2), 1), nrow = 3))[1]
+
+}
+
+
+
 ####### simulate from a piece-wise exponential distribution
 t_piecewise_exp <- function(n = 10,
                             change_points = c(6, 12),
