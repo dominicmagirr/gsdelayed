@@ -4,6 +4,8 @@ three_stage_sim_1 <- function(dummy = 1,
 
   model <- design$model
   recruitment <- design$recruitment
+  alpha_spend_f <- design$alpha_spend_f
+  alpha_one_sided <- design$alpha_one_sided
 
 
   df_uncensored <- sim_t_uncensored(model, recruitment)
@@ -68,16 +70,22 @@ three_stage_sim_1 <- function(dummy = 1,
   }
 
   c_1 <- crit_1_of_3(var_u_int_1 = wlrt_interim_1$v_u,
-                     design = design)
+                     design = design,
+                     alpha_spend_f = alpha_spend_f,
+                     alpha_one_sided = alpha_one_sided)
 
   c_2 <- crit_2_of_3(var_u_int_2 = wlrt_interim_2$v_u,
                      var_u_int_1 = wlrt_interim_1$v_u,
-                     design)
+                     design,
+                     alpha_spend_f = alpha_spend_f,
+                     alpha_one_sided = alpha_one_sided)
 
   c_3 <- crit_3_of_3(var_u_final = wlrt_final$v_u,
                      var_u_int_2 = wlrt_interim_2$v_u,
                      var_u_int_1 = wlrt_interim_1$v_u,
-                     design)
+                     design,
+                     alpha_spend_f = alpha_spend_f,
+                     alpha_one_sided = alpha_one_sided)
 
 
   data.frame(c_1 = c_1,

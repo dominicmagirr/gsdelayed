@@ -124,7 +124,9 @@ two_stage_design <- function(t_star = NULL,
        model = model,
        recruitment = recruitment,
        dco = c(dco_int = dco_int,
-               dco_final = dco_final))
+               dco_final = dco_final),
+       alpha_spend_f = alpha_spend_f,
+       alpha_one_sided = alpha_one_sided)
 
 }
 

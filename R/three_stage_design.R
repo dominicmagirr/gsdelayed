@@ -192,7 +192,9 @@ three_stage_design <- function(t_star = NULL,
        gamma = gamma,
        model = model,
        recruitment = recruitment,
-       dco = c(dco_int_1, dco_int_2, dco_final))
+       dco = c(dco_int_1, dco_int_2, dco_final),
+       alpha_spend_f = alpha_spend_f,
+       alpha_one_sided = alpha_one_sided)
 
 }
 
