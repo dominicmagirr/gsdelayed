@@ -4,11 +4,15 @@
 \alias{ncp_power}
 \title{Find the approximate non-centrality parameter and power of a modestWLRT.}
 \usage{
-ncp_power(t_star, model, recruitment, dco, length_t,
-  alpha_one_sided = 0.025)
+ncp_power(t_star = NULL, rho = NULL, gamma = NULL, model,
+  recruitment, dco, length_t, alpha_one_sided = 0.025)
 }
 \arguments{
 \item{{t_star}}{A vector. A range of possible values for t*.}
+
+\item{{rho}}{rho parameter in a Fleming-Harrington test. Default is NULL. Only used if F-H test used instead of MWLRT.}
+
+\item{{gamma}}{gamma parameter in a Fleming-Harrington test. Default is NULL. Only used if F-H test used instead of MWLRT.}
 
 \item{{model}}{A piecewise constant hazard model.
 A list containing the \code{change_points}; the rates \code{lambdas_0} on the control arm;

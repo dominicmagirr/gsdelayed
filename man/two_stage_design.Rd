@@ -4,9 +4,9 @@
 \alias{two_stage_design}
 \title{Two-stage design}
 \usage{
-two_stage_design(t_star, model, recruitment, dco_int, dco_final,
+two_stage_design(t_star = NULL, model, recruitment, dco_int, dco_final,
   events_int = NULL, events_final = NULL, alpha_one_sided = 0.025,
-  alpha_spend_f = ldobf, length_t = 18)
+  alpha_spend_f = ldobf, length_t = 18, rho = NULL, gamma = NULL)
 }
 \arguments{
 \item{t_star}{Parameter of the modestly-weighted log-rank test. Setting t_star=0 corresponds to a standard log-rank test.}
@@ -35,6 +35,10 @@ Containing \enumerate{
 \item{length_t}{Number of cutpoints to use when approximating the distribution of the MWLRT-statistic. Default is 18. Can be increased for greater accuracy.}
 
 \item{alpha_spending_f}{The alpha-spending function. Default is the Lan-DeMets O'Brien-Fleming function.}
+
+\item{{rho}}{rho parameter in a Fleming-Harrington test. Default is NULL. Only used if F-H test used instead of MWLRT.}
+
+\item{{gamma}}{gamma parameter in a Fleming-Harrington test. Default is NULL. Only used if F-H test used instead of MWLRT.}
 }
 \value{
 A list describing the design.

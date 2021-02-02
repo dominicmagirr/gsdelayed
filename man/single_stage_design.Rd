@@ -4,8 +4,9 @@
 \alias{single_stage_design}
 \title{Single-stage design}
 \usage{
-single_stage_design(t_star, model, recruitment, dco_final,
-  events_final = NULL, alpha_one_sided = 0.025, length_t = 18)
+single_stage_design(t_star = NULL, model, recruitment, dco_final,
+  events_final = NULL, alpha_one_sided = 0.025, length_t = 18,
+  rho = NULL, gamma = NULL)
 }
 \arguments{
 \item{t_star}{Parameter of the modestly-weighted log-rank test. Setting t_star=0 corresponds to a standard log-rank test.}
@@ -28,6 +29,10 @@ Containing \enumerate{
 \item{alpha_one_sided}{One-sided alpha level.}
 
 \item{length_t}{Number of cutpoints to use when approximating the distribution of the MWLRT-statistic. Default is 18. Can be increased for greater accuracy.}
+
+\item{{rho}}{rho parameter in a Fleming-Harrington test. Default is NULL. Only used if F-H test used instead of MWLRT.}
+
+\item{{gamma}}{gamma parameter in a Fleming-Harrington test. Default is NULL. Only used if F-H test used instead of MWLRT.}
 }
 \value{
 A list describing the design.
