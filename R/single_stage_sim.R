@@ -1,8 +1,11 @@
 single_stage_sim_1 <- function(dummy = 1,
-                               design){
+                               design,
+                               model,
+                               recruitment){
 
-  model <- design$model
-  recruitment <- design$recruitment
+
+  if (is.null(model))  {model <- design$model}
+  if (is.null(recruitment)) {recruitment <- design$recruitment}
 
 
   df_uncensored <- sim_t_uncensored(model, recruitment)
@@ -46,7 +49,15 @@ single_stage_sim_1 <- function(dummy = 1,
 #'
 #' @param n_sims The number of simulations.
 #' @param design The design object, created using \code{single_stage_design}
+#' @param model Model assumptions. Default is NULL, in which case model assumptions in the design object are used.
+#' @param recruitment Recruitment assumptions. Default is NULL, in which case recruitment assumptions in the design object are used.
 #' @return A data-frame containing: critical value, z-statistic, timing of analysis.
 #' @export
 
-single_stage_sim <- function(n_sims = 1, design) purrr::map_df(1:n_sims, single_stage_sim_1, design = design)
+single_stage_sim <- function(n_sims = 1, design, model = NULL, recruitment = NULL){
+  purrr::map_df(1:n_sims,
+                single_stage_sim_1,
+                design = design,
+                model = model,
+                recruitment = recruitment)
+}

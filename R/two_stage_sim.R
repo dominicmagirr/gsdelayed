@@ -1,8 +1,13 @@
 two_stage_sim_1 <- function(dummy = 1,
-                            design){
+                            design,
+                            model,
+                            recruitment){
 
-  model <- design$model
-  recruitment <- design$recruitment
+
+  if (is.null(model))  {model <- design$model}
+  if (is.null(recruitment)) {recruitment <- design$recruitment}
+
+
   alpha_spend_f <- design$alpha_spend_f
   alpha_one_sided <- design$alpha_one_sided
 
@@ -79,8 +84,16 @@ two_stage_sim_1 <- function(dummy = 1,
 #'
 #' @param n_sims The number of simulations.
 #' @param design The design object, created using \code{two_stage_design}
+#' @param model Model assumptions. Default is NULL, in which case model assumptions in the design object are used.
+#' @param recruitment Recruitment assumptions. Default is NULL, in which case recruitment assumptions in the design object are used.
 #' @return A data-frame containing: critical values, z-statistics, timing of analyses.
 #' @export
 
-two_stage_sim <- function(n_sims = 1, design) purrr::map_df(1:n_sims, two_stage_sim_1, design = design)
+two_stage_sim <- function(n_sims = 1, design, model = NULL, recruitment = NULL){
+  purrr::map_df(1:n_sims,
+                two_stage_sim_1,
+                design = design,
+                model = model,
+                recruitment = recruitment)
+}
 

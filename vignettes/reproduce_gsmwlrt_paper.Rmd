@@ -461,7 +461,7 @@ d <- three_stage_design(t_star = 6,
                         dco_int_2 = 16,
                         dco_final = 21)
 
-sim_results <- three_stage_sim(n_sims = 1000, design = d)
+system.time({sim_results <- three_stage_sim(n_sims = 100, design = d)})
 
 ## compare 
 d$overall_power
@@ -528,6 +528,256 @@ mean(sim_results$t_1 * (sim_results$z_1 <= sim_results$c_1) +
      sim_results$t_3 *  ((sim_results$z_1 > sim_results$c_1) &
                            (sim_results$z_2 > sim_results$c_2)))
 ```
+
+
+### Mis-specified design assumptions
+
+
+```{r}
+
+####################################
+get_t_pieces = function(t, ts){
+  
+  if (length(t) > 1) stop("t must be length 1")
+  
+  pmax(0, pmin(t - ts[-length(ts)], diff(ts)))
+}
+
+surv_pieces_simple = function(t, change_points, lambdas){
+  
+  if (length(t) > 1) stop("t must be length 1")
+  if (length(change_points) != length(lambdas) - 1) stop("require one event rate per time period")
+  ts = c(0, change_points, Inf)
+  
+  exp(-sum(get_t_pieces(t, ts) * lambdas))
+  
+}
+####################################
+t_seq <- seq(0,24, length.out = 100)
+
+s_c <- purrr::map_dbl(t_seq, surv_pieces_simple, 
+                      change_points = c(6), lambdas = log(2) / c(8, 8))
+s_e_0 <- purrr::map_dbl(t_seq, surv_pieces_simple, 
+                        change_points = c(0), lambdas = log(2) / c(12.3, 12.3))
+s_e_4 <- purrr::map_dbl(t_seq, surv_pieces_simple, 
+                        change_points = c(4), lambdas = log(2) / c(8, 16.6))
+s_e_8 <- purrr::map_dbl(t_seq, surv_pieces_simple, 
+                        change_points = c(8), lambdas = log(2) / c(8, 35))
+
+
+plot(t_seq, s_c, ylim = c(0,1), type = "l", xlab = "Time (months)", ylab = "Survival",
+     main = "Alternative hypotheses")
+points(t_seq, s_e_0, lty = 1, type = "l", col = 2)
+points(t_seq, s_e_4, lty = 1, type = "l", col = 4)
+points(t_seq, s_e_8, lty = 1, type = "l", col = 6)
+legend("topright", c("control",
+                     "delay = 0m",
+                     "delay = 4m"), lty = c(1,1,1), col = c(1,2,4))
+
+```
+
+```{r}
+t_seq <- seq(0,24, length.out = 100)
+
+s_c <- purrr::map_dbl(t_seq, surv_pieces_simple, 
+                      change_points = c(6), lambdas = log(2) / c(6, 6))
+s_e_0 <- purrr::map_dbl(t_seq, surv_pieces_simple, 
+                        change_points = c(0), lambdas = log(2) / c(9.2, 9.2))
+s_e_4 <- purrr::map_dbl(t_seq, surv_pieces_simple, 
+                        change_points = c(4), lambdas = log(2) / c(6, 12.6))
+s_e_8 <- purrr::map_dbl(t_seq, surv_pieces_simple, 
+                        change_points = c(8), lambdas = log(2) / c(6, 25))
+
+
+plot(t_seq, s_c, ylim = c(0,1), type = "l", xlab = "Time (months)", ylab = "Survival",
+     main = "Alternative hypotheses")
+points(t_seq, s_e_0, lty = 1, type = "l", col = 2)
+points(t_seq, s_e_4, lty = 1, type = "l", col = 4)
+points(t_seq, s_e_8, lty = 1, type = "l", col = 6)
+legend("topright", c("control",
+                     "delay = 0m",
+                     "delay = 4m"), lty = c(1,1,1), col = c(1,2,4))
+```
+
+
+```{r}
+t_seq <- seq(0,24, length.out = 100)
+
+s_c <- purrr::map_dbl(t_seq, surv_pieces_simple, 
+                      change_points = c(6), lambdas = log(2) / c(10, 10))
+s_e_0 <- purrr::map_dbl(t_seq, surv_pieces_simple, 
+                        change_points = c(0), lambdas = log(2) / c(15.4, 15.4))
+s_e_4 <- purrr::map_dbl(t_seq, surv_pieces_simple, 
+                        change_points = c(4), lambdas = log(2) / c(10, 21.6))
+s_e_8 <- purrr::map_dbl(t_seq, surv_pieces_simple, 
+                        change_points = c(8), lambdas = log(2) / c(10, 45))
+
+
+plot(t_seq, s_c, ylim = c(0,1), type = "l", xlab = "Time (months)", ylab = "Survival",
+     main = "Alternative hypotheses")
+points(t_seq, s_e_0, lty = 1, type = "l", col = 2)
+points(t_seq, s_e_4, lty = 1, type = "l", col = 4)
+points(t_seq, s_e_8, lty = 1, type = "l", col = 6)
+legend("topright", c("control",
+                     "delay = 0m",
+                     "delay = 4m"), lty = c(1,1,1), col = c(1,2,4))
+```
+
+
+## Corresponding standard log rank tests
+
+```{r}
+
+
+################################################################
+model_8m_control_null <- list(change_points = c(4),
+                              lambdas_0 = c(log(2) / 8, log(2) / 8),
+                              lambdas_1 = c(log(2) / 8, log(2) / 8))
+
+
+model_8m_control_0m_delay <- list(change_points = c(4),
+                                  lambdas_0 = c(log(2) / 8, log(2) / 8),
+                                  lambdas_1 = c(log(2) / 12.3, log(2) / 12.3))
+
+
+model_8m_control_4m_delay <- list(change_points = c(4),
+                                  lambdas_0 = c(log(2) / 8, log(2) / 8),
+                                  lambdas_1 = c(log(2) / 8, log(2) / 16.6))
+
+
+
+model_8m_control_8m_delay <- list(change_points = c(8),
+                                  lambdas_0 = log(2) / c(8,8),
+                                  lambdas_1 = log(2) / c(8, 35))
+
+
+############################################################
+model_6m_control_null <- list(change_points = c(4),
+                                  lambdas_0 = log(2) / c(6,6),
+                                  lambdas_1 = log(2) / c(6, 6))
+
+model_6m_control_0m_delay <- list(change_points = c(4),
+                                  lambdas_0 = log(2) / c(6,6),
+                                  lambdas_1 = log(2) / c(9.2,9.2))
+
+model_6m_control_4m_delay <- list(change_points = c(4),
+                                  lambdas_0 = log(2) / c(6,6),
+                                  lambdas_1 = log(2) / c(6, 12.6))
+
+model_6m_control_8m_delay <- list(change_points = c(8),
+                                  lambdas_0 = log(2) / c(6,6),
+                                  lambdas_1 = log(2) / c(6, 25))
+
+
+############################################################
+model_10m_control_null <- list(change_points = c(4),
+                                  lambdas_0 = log(2) / c(10,10),
+                                  lambdas_1 = log(2) / c(10, 10))
+
+model_10m_control_0m_delay <- list(change_points = c(4),
+                                  lambdas_0 = log(2) / c(10,10),
+                                  lambdas_1 = log(2) / c(15.4,15.4))
+
+model_10m_control_4m_delay <- list(change_points = c(4),
+                                  lambdas_0 = log(2) / c(10,10),
+                                  lambdas_1 = log(2) / c(10,21.6))
+
+
+model_10m_control_8m_delay <- list(change_points = c(8),
+                                  lambdas_0 = log(2) / c(10,10),
+                                  lambdas_1 = log(2) / c(10, 45))
+
+
+```
+
+
+
+## Mis-specified recruitment
+
+```{r}
+recruitment_1 <- list(n_0 = 150, 
+                      n_1 = 150, 
+                      r_period = 8, 
+                      k = 1)
+
+
+recruitment_2 <- list(n_0 = 150, 
+                      n_1 = 150, 
+                      r_period = 8, 
+                      k = 2)
+
+
+
+recruitment_3 <- list(n_0 = 150, 
+                      n_1 = 150, 
+                      r_period = 15, 
+                      k = 2)
+
+
+```
+
+
+
+## Designs
+
+
+```{r}
+d_8m_control_4m_delay <- three_stage_design(t_star = 6,
+                                            model = model_8m_control_4m_delay,
+                                            recruitment = recruitment_1,
+                                            dco_int_1 = 11,
+                                            dco_int_2 = 16,
+                                            dco_final = 21,
+                                            alpha_spend_f = hsd_mid,
+                                            alpha_one_sided = 0.025)
+
+d_8m_control_4m_delay_lr <- three_stage_design(t_star = 0,
+                                               model = model_8m_control_4m_delay,
+                                               recruitment = recruitment_1,
+                                               dco_int_1 = 11,
+                                               dco_int_2 = 16,
+                                               dco_final = 21,
+                                               alpha_spend_f = hsd_mid,
+                                               alpha_one_sided = 0.025)
+
+
+#################################################
+d_6m_control_4m_delay <- three_stage_design(t_star = 6,
+                                            model = model_6m_control_4m_delay,
+                                            recruitment = recruitment_1,
+                                            dco_int_1 = 11,
+                                            dco_int_2 = 16,
+                                            dco_final = 21,
+                                            alpha_spend_f = hsd_mid,
+                                            alpha_one_sided = 0.025)
+
+
+```
+
+
+
+## Simulations
+
+```{r}
+sim_results <- three_stage_sim(n_sims = 10, design = d_8m_control_4m_delay)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
