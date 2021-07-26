@@ -457,6 +457,7 @@ It's possible to check the power of the (modestly-weighted) log-rank test via si
 d <- three_stage_design(t_star = 6,
                         model = model,
                         recruitment = recruitment,
+                        alpha_spend_f = hsd_obf,
                         dco_int_1 = 11,
                         dco_int_2 = 16,
                         dco_final = 21)
@@ -722,6 +723,8 @@ recruitment_3 <- list(n_0 = 150,
 
 
 ```{r}
+## 2 designs (considered fixed)
+
 d_8m_control_4m_delay <- three_stage_design(t_star = 6,
                                             model = model_8m_control_4m_delay,
                                             recruitment = recruitment_1,
@@ -739,19 +742,6 @@ d_8m_control_4m_delay_lr <- three_stage_design(t_star = 0,
                                                dco_final = 21,
                                                alpha_spend_f = hsd_mid,
                                                alpha_one_sided = 0.025)
-
-
-#################################################
-d_6m_control_4m_delay <- three_stage_design(t_star = 6,
-                                            model = model_6m_control_4m_delay,
-                                            recruitment = recruitment_1,
-                                            dco_int_1 = 11,
-                                            dco_int_2 = 16,
-                                            dco_final = 21,
-                                            alpha_spend_f = hsd_mid,
-                                            alpha_one_sided = 0.025)
-
-
 ```
 
 
@@ -759,7 +749,68 @@ d_6m_control_4m_delay <- three_stage_design(t_star = 6,
 ## Simulations
 
 ```{r}
-sim_results <- three_stage_sim(n_sims = 10, design = d_8m_control_4m_delay)
+#############################
+### control 8m; recruitment 1
+
+c8_r1_null_mw <- three_stage_sim(n_sims = 10, design = d_8m_control_4m_delay,    model = model_8m_control_null, recruitment = recruitment_1)
+c8_r1_null_lr <- three_stage_sim(n_sims = 10, design = d_8m_control_4m_delay_lr, model = model_8m_control_null, recruitment = recruitment_1)
+
+c8_r1_d0_mw <- three_stage_sim(n_sims = 10, design = d_8m_control_4m_delay,    model = model_8m_control_0m_delay, recruitment = recruitment_1)
+c8_r1_d0_lr <- three_stage_sim(n_sims = 10, design = d_8m_control_4m_delay_lr, model = model_8m_control_0m_delay, recruitment = recruitment_1)
+
+c8_r1_d4_mw <- three_stage_sim(n_sims = 10, design = d_8m_control_4m_delay,    model = model_8m_control_4m_delay, recruitment = recruitment_1)
+c8_r1_d4_lr <- three_stage_sim(n_sims = 10, design = d_8m_control_4m_delay_lr, model = model_8m_control_4m_delay, recruitment = recruitment_1)
+
+c8_r1_d8_mw <- three_stage_sim(n_sims = 10, design = d_8m_control_4m_delay,    model = model_8m_control_8m_delay, recruitment = recruitment_1)
+c8_r1_d8_lr <- three_stage_sim(n_sims = 10, design = d_8m_control_4m_delay_lr, model = model_8m_control_8m_delay, recruitment = recruitment_1)
+
+
+#############################
+### control 10m; recruitment 1
+
+c10_r1_null_mw <- three_stage_sim(n_sims = 10, design = d_8m_control_4m_delay,    model = model_8m_control_null, recruitment = recruitment_1)
+c8_r1_null_lr <- three_stage_sim(n_sims = 10, design = d_8m_control_4m_delay_lr, model = model_8m_control_null, recruitment = recruitment_1)
+
+c8_r1_d0_mw <- three_stage_sim(n_sims = 10, design = d_8m_control_4m_delay,    model = model_8m_control_0m_delay, recruitment = recruitment_1)
+c8_r1_d0_lr <- three_stage_sim(n_sims = 10, design = d_8m_control_4m_delay_lr, model = model_8m_control_0m_delay, recruitment = recruitment_1)
+
+c8_r1_d4_mw <- three_stage_sim(n_sims = 10, design = d_8m_control_4m_delay,    model = model_8m_control_4m_delay, recruitment = recruitment_1)
+c8_r1_d4_lr <- three_stage_sim(n_sims = 10, design = d_8m_control_4m_delay_lr, model = model_8m_control_4m_delay, recruitment = recruitment_1)
+
+c8_r1_d8_mw <- three_stage_sim(n_sims = 10, design = d_8m_control_4m_delay,    model = model_8m_control_8m_delay, recruitment = recruitment_1)
+c8_r1_d8_lr <- three_stage_sim(n_sims = 10, design = d_8m_control_4m_delay_lr, model = model_8m_control_8m_delay, recruitment = recruitment_1)
+
+
+
+
+
+
+## compare 
+d$overall_power
+
+get_op <- function(sim_results){
+  
+  mean(sim_results$z_1 < sim_results$c_1 |
+         sim_results$z_2 < sim_results$c_2 | 
+         sim_results$z_3 < sim_results$c_3)
+  
+}
+
+
+
+get_et <- function(sim_results){
+  
+  mean(sim_results$t_1 * (sim_results$z_1 <= sim_results$c_1) + 
+         sim_results$t_2 *  ((sim_results$z_1 > sim_results$c_1) &
+                               (sim_results$z_2 <= sim_results$c_2)) +
+         sim_results$t_3 *  ((sim_results$z_1 > sim_results$c_1) &
+                               (sim_results$z_2 > sim_results$c_2)))
+  
+}
+
+get_op(sim_results)
+get_et(sim_results)
+
 ```
 
 

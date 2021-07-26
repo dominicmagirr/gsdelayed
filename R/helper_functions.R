@@ -86,6 +86,7 @@ crit_1_of_3 <- function(var_u_int_1,
 #'
 #' @param var_u_int_2 The observed variance of the weighted log-rank statistic at the second interim.
 #' @param var_u_int_1 The observed variance of the weighted log-rank statistic at the first interim.
+#' @param crit_1 The critical value for the z-statistic at the first interim, found via \code{crit_1_of_3}.
 #' @param design The design object, created using \code{three_stage_design}
 #' @param alpha_spend_f The alpha-spending function. Default is the Lan-DeMets O'Brien-Fleming function.
 #' @param alpha_one_sided One-sided alpha level.
@@ -94,11 +95,10 @@ crit_1_of_3 <- function(var_u_int_1,
 #'
 crit_2_of_3 <- function(var_u_int_2,
                         var_u_int_1,
+                        crit_1,
                         design,
                         alpha_spend_f = ldobf,
                         alpha_one_sided = 0.025){
-
-  crit_1 <- qnorm(alpha_spend_f(var_u_int_1 / design$var_u[3], alpha_one_sided))
 
   alpha_spend_2 <- alpha_spend_f(var_u_int_2 / design$var_u[3], alpha_one_sided)
 
@@ -117,6 +117,8 @@ crit_2_of_3 <- function(var_u_int_2,
 #' @param var_u_final The observed variance of the weighted log-rank statistic at the final analysis.
 #' @param var_u_int_2 The observed variance of the weighted log-rank statistic at the second interim.
 #' @param var_u_int_1 The observed variance of the weighted log-rank statistic at the first interim.
+#' @param crit_1 The critical value for the z-statistic at the first interim, found via \code{crit_1_of_3}.
+#' @param crit_2 The critical value for the z-statistic at the second interim, found via \code{crit_2_of_3}.
 #' @param design The design object, created using \code{three_stage_design}
 #' @param alpha_spend_f The alpha-spending function. Default is the Lan-DeMets O'Brien-Fleming function.
 #' @param alpha_one_sided One-sided alpha level.
@@ -126,17 +128,13 @@ crit_2_of_3 <- function(var_u_int_2,
 crit_3_of_3 <- function(var_u_final,
                         var_u_int_2,
                         var_u_int_1,
+                        crit_1,
+                        crit_2,
                         design,
                         alpha_spend_f = ldobf,
                         alpha_one_sided = 0.025){
 
-  crit_1 <- qnorm(alpha_spend_f(var_u_int_1 / design$var_u[3], alpha_one_sided))
 
-  crit_2 <- crit_2_of_3(var_u_int_2,
-                        var_u_int_1,
-                        design,
-                        alpha_spend_f,
-                        alpha_one_sided)
 
 
   -uniroot(find_crit_3, c(0,100),

@@ -57,16 +57,33 @@ two_stage_sim_1 <- function(dummy = 1,
   }
 
 
-  c_1 <- crit_1_of_2(var_u_int = wlrt_interim$v_u,
-                     design = design,
-                     alpha_spend_f = alpha_spend_f,
-                     alpha_one_sided = alpha_one_sided)
+  ##########################
+  ## allow for under-running
+  ##########################
 
-  c_2 <- crit_2_of_2(var_u_final = wlrt_final$v_u,
-                     var_u_int = wlrt_interim$v_u,
-                     design = design,
-                     alpha_spend_f = alpha_spend_f,
-                     alpha_one_sided = alpha_one_sided)
+
+  if (wlrt_interim_1$v_u / design$var_u[2] > 0.99){
+
+    c_1 <- qnorm(alpha_one_sided)
+
+    c_2 <- -Inf
+
+  }
+  else {
+
+
+    c_1 <- crit_1_of_2(var_u_int = wlrt_interim$v_u,
+                       design = design,
+                       alpha_spend_f = alpha_spend_f,
+                       alpha_one_sided = alpha_one_sided)
+
+    c_2 <- crit_2_of_2(var_u_final = wlrt_final$v_u,
+                       var_u_int = wlrt_interim$v_u,
+                       design = design,
+                       alpha_spend_f = alpha_spend_f,
+                       alpha_one_sided = alpha_one_sided)
+
+  }
 
   data.frame(c_1 = c_1,
     c_2 = c_2,

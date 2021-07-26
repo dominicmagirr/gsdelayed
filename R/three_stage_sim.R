@@ -74,24 +74,59 @@ three_stage_sim_1 <- function(dummy = 1,
 
   }
 
-  c_1 <- crit_1_of_3(var_u_int_1 = wlrt_interim_1$v_u,
-                     design = design,
-                     alpha_spend_f = alpha_spend_f,
-                     alpha_one_sided = alpha_one_sided)
+  ##########################
+  ## allow for under-running
+  ##########################
 
-  c_2 <- crit_2_of_3(var_u_int_2 = wlrt_interim_2$v_u,
-                     var_u_int_1 = wlrt_interim_1$v_u,
-                     design,
-                     alpha_spend_f = alpha_spend_f,
-                     alpha_one_sided = alpha_one_sided)
+  if (wlrt_interim_1$v_u / design$var_u[3] > 0.99){
 
-  c_3 <- crit_3_of_3(var_u_final = wlrt_final$v_u,
-                     var_u_int_2 = wlrt_interim_2$v_u,
-                     var_u_int_1 = wlrt_interim_1$v_u,
-                     design,
-                     alpha_spend_f = alpha_spend_f,
-                     alpha_one_sided = alpha_one_sided)
+    c_1 <- qnorm(alpha_one_sided)
 
+    c_2 <- -Inf
+
+    c_3 <- -Inf
+
+  }
+  else if (wlrt_interim_2$v_u / design$var_u[3] > 0.99){
+
+    c_1 <- crit_1_of_3(var_u_int_1 = wlrt_interim_1$v_u,
+                       design = design,
+                       alpha_spend_f = alpha_spend_f,
+                       alpha_one_sided = alpha_one_sided)
+
+    c_2 <- crit_2_of_3(var_u_int_2 = wlrt_interim_2$v_u,
+                       var_u_int_1 = wlrt_interim_1$v_u,
+                       crit_1 = c_1,
+                       design,
+                       alpha_spend_f = function(t, alpha_one_sided) alpha_one_sided,
+                       alpha_one_sided = alpha_one_sided)
+
+    c_3 <- -Inf
+
+  }
+  else {
+
+    c_1 <- crit_1_of_3(var_u_int_1 = wlrt_interim_1$v_u,
+                       design = design,
+                       alpha_spend_f = alpha_spend_f,
+                       alpha_one_sided = alpha_one_sided)
+
+    c_2 <- crit_2_of_3(var_u_int_2 = wlrt_interim_2$v_u,
+                       var_u_int_1 = wlrt_interim_1$v_u,
+                       crit_1 = c_1,
+                       design,
+                       alpha_spend_f = alpha_spend_f,
+                       alpha_one_sided = alpha_one_sided)
+
+    c_3 <- crit_3_of_3(var_u_final = wlrt_final$v_u,
+                       var_u_int_2 = wlrt_interim_2$v_u,
+                       var_u_int_1 = wlrt_interim_1$v_u,
+                       crit_1 = c_1,
+                       crit_2 = c_2,
+                       design,
+                       alpha_spend_f = alpha_spend_f,
+                       alpha_one_sided = alpha_one_sided)
+  }
 
   data.frame(c_1 = c_1,
              c_2 = c_2,
