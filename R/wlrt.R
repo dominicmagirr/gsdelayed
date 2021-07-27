@@ -32,24 +32,28 @@ wlrt <- function(df,
 
   if (!(wlr %in% c("lr", "fh", "mw"))) stop("wlr must be one of: 'lr', 'fh', 'mw'")
 
-  #### get summary
-  s_sum <- summary(survival::survfit(survival::Surv(eval(as.name(time_colname)),
-                                                    eval(as.name(event_colname))) ~ 1,
-                                     data= df,
-                                     timefix = FALSE))
+  #### fit pooled data
+  fit_pool <- survival::survfit(survival::Surv(eval(as.name(time_colname)),
+                                               eval(as.name(event_colname))) ~ 1,
+                                data= df,
+                                timefix = FALSE)
+
 
   ### get survival probabilities for the pooled data
-  s_pool <- s_sum$surv
+  fail <- fit_pool$time[fit_pool$n.event > 0]
+  km_pool <- fit_pool$surv[fit_pool$n.event > 0]
+  km_pool_minus <- c(1, km_pool[1:(length(km_pool) - 1)])
+
 
   if (wlr == "lr"){
     ### standard log-rank test weights
-    w <- rep(1, length(s_pool))
+    w <- rep(1, length(km_pool_minus))
   }
   else if (wlr == "fh"){
     if (is.null(rho) || is.null(gamma)) stop("must specify rho and gamma")
     if (rho < 0 || gamma < 0) stop("rho and gamma must be non-negative")
 
-    w <- c(1, s_pool[-length(s_pool)]) ^ rho * (1 - c(1, s_pool[-length(s_pool)])) ^ gamma
+    w <- km_pool_minus ^ rho * (1 - km_pool_minus) ^ gamma
 
   }
   else{
@@ -58,60 +62,52 @@ wlrt <- function(df,
     ### modest weights
     if (!is.null(t_star)){
 
-      if(any(s_sum$time < t_star)){
+      if(any(fail < t_star)){
 
-        w <- pmin(1 / c(1, s_pool[-length(s_pool)]),
-                  1 / s_pool[max(which(s_sum$time < t_star))])
+        w <- pmin(1 / km_pool_minus,
+                  1 / km_pool[max(which(fail < t_star))])
       }
       else {
-        w <- rep(1, length(s_pool))
+        w <- rep(1, length(km_pool_minus))
       }
 
     }
     else {
-      w <- pmin(1 / c(1, s_pool[-length(s_pool)]),
+      w <- pmin(1 / km_pool_minus,
                 1 / s_star)
     }
   }
 
   ### produce risk table
-  rt_row <- function(t,
-                     df,
-                     trt_colname,
-                     time_colname,
-                     event_colname){
+  trt <- df[[trt_colname]]
+  u_trt <- sort(unique(trt))
+  k <- length(u_trt) ### always equal to 2 in this package
+  times <- df[[time_colname]]
+  status <- df[[event_colname]]
 
-    df1 = df[df[[trt_colname]] == unique(df[[trt_colname]])[1],]
-    df2 = df[df[[trt_colname]] == unique(df[[trt_colname]])[2],]
+  neventg <- table(trt[status > 0], times[status > 0])
+  nevent <- colSums(neventg)
 
-    data.frame(time = t,
-               r1 = sum(df1[[time_colname]] >= t),
-               r2 = sum(df2[[time_colname]] >= t),
-               e1 = sum(df1[[time_colname]] == t & df1[[event_colname]] == 1),
-               e2 = sum(df2[[time_colname]] == t & df2[[event_colname]] == 1))
-  }
-
-  #########################################
-  rt <- purrr::map_df(unique(df[[time_colname]]),
-                      rt_row,
-                      df = df,
-                      trt_colname = trt_colname,
-                      time_colname = time_colname,
-                      event_colname = event_colname)
-
-  rt <- dplyr::filter(dplyr::arrange(rt, time),
-                      e1 > 0 | e2 > 0)
-
+  nriskg <- matrix(1, length(fail), k)
+  for (i in 1:k) nriskg[, i] <- colSums(matrix(rep(fail,each = sum(trt == u_trt[i])),,length(fail)) <= times[trt == u_trt[i]])
+  nrisk <- rowSums(nriskg)
 
   ## test statistics
-  u = sum(w * (rt$e2 - (rt$e1+rt$e2) * rt$r2 / (rt$r1+rt$r2)))
-  v_u = sum(w^2 * rt$r1 * rt$r2 * (rt$e1+rt$e2) * (rt$r1+rt$r2 - (rt$e1+rt$e2)) / ((rt$r1+rt$r2)^2 * (rt$r1+rt$r2-1)), na.rm = TRUE)
+
+  observed <- w %*% t(neventg)
+  expected <- w %*% (nriskg * (nevent/nrisk))
+
+  u <- (observed - expected)[, 2]
+
+  v_u <- w^2 * (nevent * (nrisk - nevent)/(nrisk - 1))
+  v_u[nrisk == 1] <- 0
+  v_u <- (diag(c(v_u %*% (nriskg/nrisk))) - t(nriskg/nrisk) %*% ((nriskg/nrisk) * v_u))[2,2]
 
   z = u / sqrt(v_u)
 
-  data.frame(u = u,
+  data.frame(u = (observed - expected)[, 2],
              v_u = v_u,
              z = z,
-             o_minus_e_trt = unique(df[[trt_colname]])[2])
+             o_minus_e_trt = names((observed - expected)[, 2]))
 
 }
