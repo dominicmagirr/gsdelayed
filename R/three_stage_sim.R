@@ -2,7 +2,8 @@
 three_stage_sim_1 <- function(dummy = 1,
                               design,
                               model,
-                              recruitment){
+                              recruitment,
+                              info_frac_v){
 
 
   if (is.null(model))  {model <- design$model}
@@ -74,59 +75,104 @@ three_stage_sim_1 <- function(dummy = 1,
 
   }
 
+
   ##########################
-  ## allow for under-running
-  ##########################
+  ## Allow 2 options for
+  ## alpha spending:
+  ## 1. based on V_1 / V_3 etc.
+  ## 2. based on n_1 / n_3 etc.
+  ###########################
 
-  if (wlrt_interim_1$v_u / design$var_u[3] > 0.99){
+  if (info_frac_v){
+    #############################
+    ## alpha spending based on V
+    ##############################
 
-    c_1 <- qnorm(alpha_one_sided)
 
-    c_2 <- -Inf
+    ##########################
+    ## allow for under-running
+    ##########################
 
-    c_3 <- -Inf
+    if (wlrt_interim_1$v_u / design$var_u[3] > 0.95){
 
-  }
-  else if (wlrt_interim_2$v_u / design$var_u[3] > 0.99){
+      c_1 <- qnorm(alpha_one_sided)
 
-    c_1 <- crit_1_of_3(var_u_int_1 = wlrt_interim_1$v_u,
-                       design = design,
-                       alpha_spend_f = alpha_spend_f,
-                       alpha_one_sided = alpha_one_sided)
+      c_2 <- -Inf
 
-    c_2 <- crit_2_of_3(var_u_int_2 = wlrt_interim_2$v_u,
-                       var_u_int_1 = wlrt_interim_1$v_u,
-                       crit_1 = c_1,
-                       design,
-                       alpha_spend_f = function(t, alpha_one_sided) alpha_one_sided,
-                       alpha_one_sided = alpha_one_sided)
+      c_3 <- -Inf
 
-    c_3 <- -Inf
+    }
+    else if (wlrt_interim_2$v_u / design$var_u[3] > 0.975){
 
+      c_1 <- crit_1_of_3(info_frac_sf = wlrt_interim_1$v_u / design$var_u[3],
+                         alpha_spend_f = alpha_spend_f,
+                         alpha_one_sided = alpha_one_sided)
+
+
+
+      c_2 <- crit_2_of_3(info_frac_sf = wlrt_interim_2$v_u / design$var_u[3],
+                         info_frac_1_2 = wlrt_interim_1$v_u / wlrt_interim_2$v_u,
+                         crit_1 = c_1,
+                         alpha_spend_f = function(t, alpha_one_sided) alpha_one_sided,
+                         alpha_one_sided = alpha_one_sided)
+
+      c_3 <- -Inf
+
+    }
+    else {
+
+      c_1 <- crit_1_of_3(info_frac_sf = wlrt_interim_1$v_u / design$var_u[3],
+                         alpha_spend_f = alpha_spend_f,
+                         alpha_one_sided = alpha_one_sided)
+
+
+
+      c_2 <- crit_2_of_3(info_frac_sf = wlrt_interim_2$v_u / design$var_u[3],
+                         info_frac_1_2 = wlrt_interim_1$v_u / wlrt_interim_2$v_u,
+                         crit_1 = c_1,
+                         alpha_spend_f = alpha_spend_f,
+                         alpha_one_sided = alpha_one_sided)
+
+
+
+      c_3 <- crit_3_of_3(info_frac_1_3 = wlrt_interim_1$v_u / wlrt_final$v_u,
+                         info_frac_2_3 = wlrt_interim_2$v_u / wlrt_final$v_u,
+                         crit_1 = c_1,
+                         crit_2 = c_2,
+                         alpha_spend_f = alpha_spend_f,
+                         alpha_one_sided = alpha_one_sided)
+    }
   }
   else {
+    ###################################
+    ## alpha spending based on n events
+    ###################################
 
-    c_1 <- crit_1_of_3(var_u_int_1 = wlrt_interim_1$v_u,
-                       design = design,
+
+
+    c_1 <- crit_1_of_3(info_frac_sf = design$n_events[1] / design$n_events[3],
                        alpha_spend_f = alpha_spend_f,
                        alpha_one_sided = alpha_one_sided)
 
-    c_2 <- crit_2_of_3(var_u_int_2 = wlrt_interim_2$v_u,
-                       var_u_int_1 = wlrt_interim_1$v_u,
+
+
+    c_2 <- crit_2_of_3(info_frac_sf = design$n_events[2] / design$n_events[3],
+                       info_frac_1_2 = wlrt_interim_1$v_u / wlrt_interim_2$v_u,
                        crit_1 = c_1,
-                       design,
                        alpha_spend_f = alpha_spend_f,
                        alpha_one_sided = alpha_one_sided)
 
-    c_3 <- crit_3_of_3(var_u_final = wlrt_final$v_u,
-                       var_u_int_2 = wlrt_interim_2$v_u,
-                       var_u_int_1 = wlrt_interim_1$v_u,
+
+
+    c_3 <- crit_3_of_3(info_frac_1_3 = wlrt_interim_1$v_u / wlrt_final$v_u,
+                       info_frac_2_3 = wlrt_interim_2$v_u / wlrt_final$v_u,
                        crit_1 = c_1,
                        crit_2 = c_2,
-                       design,
                        alpha_spend_f = alpha_spend_f,
                        alpha_one_sided = alpha_one_sided)
+
   }
+
 
   data.frame(c_1 = c_1,
              c_2 = c_2,
@@ -148,15 +194,17 @@ three_stage_sim_1 <- function(dummy = 1,
 #' @param design The design object, created using \code{three_stage_design}
 #' @param model Model assumptions. Default is NULL, in which case model assumptions in the design object are used.
 #' @param recruitment Recruitment assumptions. Default is NULL, in which case recruitment assumptions in the design object are used.
+#' @param info_frac_v Is the information fraction based on the variance of the U statistics. Default is TRUE. If FALSE then the information fraction is based on the number of events.
 #' @return A data-frame containing: critical values, z-statistics, timing of analyses.
 #' @export
 #'
-three_stage_sim <- function(n_sims = 1, design, model = NULL, recruitment = NULL){
+three_stage_sim <- function(n_sims = 1, design, model = NULL, recruitment = NULL, info_frac_v = TRUE){
 
  purrr::map_df(1:n_sims,
                three_stage_sim_1,
                design = design,
                model = model,
-               recruitment = recruitment)
+               recruitment = recruitment,
+               info_frac_v = info_frac_v)
 
 }

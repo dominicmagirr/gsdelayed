@@ -1,7 +1,8 @@
 two_stage_sim_1 <- function(dummy = 1,
                             design,
                             model,
-                            recruitment){
+                            recruitment,
+                            info_frac_v){
 
 
   if (is.null(model))  {model <- design$model}
@@ -58,31 +59,53 @@ two_stage_sim_1 <- function(dummy = 1,
 
 
   ##########################
-  ## allow for under-running
-  ##########################
+  ## Allow 2 options for
+  ## alpha spending:
+  ## 1. based on V_1 / V_3 etc.
+  ## 2. based on n_1 / n_3 etc.
+  ###########################
+
+  if (info_frac_v){
+    #############################
+    ## alpha spending based on V
+    ##############################
+
+    ##########################
+    ## allow for under-running
+    ##########################
 
 
-  if (wlrt_interim_1$v_u / design$var_u[2] > 0.99){
+    if (wlrt_interim_1$v_u / design$var_u[2] > 0.975){
 
-    c_1 <- qnorm(alpha_one_sided)
+      c_1 <- qnorm(alpha_one_sided)
 
-    c_2 <- -Inf
+      c_2 <- -Inf
 
+    }
+    else {
+
+
+      c_1 <- crit_1_of_2(info_frac_sf = wlrt_interim$v_u / design$var_u[2],
+                         alpha_spend_f = alpha_spend_f,
+                         alpha_one_sided = alpha_one_sided)
+
+      c_2 <- crit_2_of_2(info_frac_1_2 = wlrt_interim$v_u / wlrt_final$v_u,
+                         crit_1 = c_1,
+                         alpha_spend_f = alpha_spend_f,
+                         alpha_one_sided = alpha_one_sided)
+
+    }
   }
   else {
 
-
-    c_1 <- crit_1_of_2(var_u_int = wlrt_interim$v_u,
-                       design = design,
+    c_1 <- crit_1_of_2(info_frac_sf = design$n_events[1] / design$n_events[2],
                        alpha_spend_f = alpha_spend_f,
                        alpha_one_sided = alpha_one_sided)
 
-    c_2 <- crit_2_of_2(var_u_final = wlrt_final$v_u,
-                       var_u_int = wlrt_interim$v_u,
-                       design = design,
+    c_2 <- crit_2_of_2(info_frac_1_2 = wlrt_interim$v_u / wlrt_final$v_u,
+                       crit_1 = c_1,
                        alpha_spend_f = alpha_spend_f,
                        alpha_one_sided = alpha_one_sided)
-
   }
 
   data.frame(c_1 = c_1,
@@ -106,11 +129,12 @@ two_stage_sim_1 <- function(dummy = 1,
 #' @return A data-frame containing: critical values, z-statistics, timing of analyses.
 #' @export
 
-two_stage_sim <- function(n_sims = 1, design, model = NULL, recruitment = NULL){
+two_stage_sim <- function(n_sims = 1, design, model = NULL, recruitment = NULL, info_frac_v){
   purrr::map_df(1:n_sims,
                 two_stage_sim_1,
                 design = design,
                 model = model,
-                recruitment = recruitment)
+                recruitment = recruitment,
+                info_frac_v = info_frac_v)
 }
 
