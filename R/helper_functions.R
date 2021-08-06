@@ -25,7 +25,7 @@ crit_1_of_2 <- function(info_frac_sf,
                         alpha_spend_f = ldobf,
                         alpha_one_sided = 0.025){
 
-  qnorm(alpha_spend_f(min(1, var_u_int / design$var_u[2]), alpha_one_sided))
+  qnorm(alpha_spend_f(min(1, info_frac_sf), alpha_one_sided))
 
 }
 #' Critical value at final analysis
@@ -128,7 +128,7 @@ crit_3_of_3 <- function(info_frac_1_3,
   -uniroot(find_crit_3, c(-100,1000),
            crit_1 = -crit_1,
            crit_2 = -crit_2,
-           info_frac_1 = min(1, info_frac_1_3),
+           info_frac_1 = min(1, info_frac_2_3, info_frac_1_3),
            info_frac_2 = min(1, info_frac_2_3),
            alpha_one_sided = alpha_one_sided)$root
 

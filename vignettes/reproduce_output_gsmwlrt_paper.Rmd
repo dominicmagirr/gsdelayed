@@ -1,0 +1,676 @@
+---
+title: "Reproduce output from paper"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{reproduce_vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE,
+                      comment =  "#>")
+```
+
+```{r setup}
+#library(gsdelayed)
+devtools::load_all(".")
+
+library(tidyverse)
+library(scales)
+library(survival)
+library(survminer)
+library(survRM2)
+library(gsDesign)
+```
+
+## Alternative hypotheses
+
+```{r}
+####################################
+get_t_pieces = function(t, ts){
+  
+  if (length(t) > 1) stop("t must be length 1")
+  
+  pmax(0, pmin(t - ts[-length(ts)], diff(ts)))
+}
+surv_pieces_simple = function(t, change_points, lambdas){
+  
+  if (length(t) > 1) stop("t must be length 1")
+  if (length(change_points) != length(lambdas) - 1) stop("require one event rate per time period")
+  ts = c(0, change_points, Inf)
+  
+  exp(-sum(get_t_pieces(t, ts) * lambdas))
+  
+}
+####################################
+t_seq <- seq(0,24, length.out = 100)
+s_c <- purrr::map_dbl(t_seq, surv_pieces_simple, 
+                      change_points = c(6), lambdas = log(2) / c(8, 8))
+s_e_0 <- purrr::map_dbl(t_seq, surv_pieces_simple, 
+                        change_points = c(0), lambdas = log(2) / c(12.3, 12.3))
+s_e_4 <- purrr::map_dbl(t_seq, surv_pieces_simple, 
+                        change_points = c(4), lambdas = log(2) / c(8, 16.6))
+s_e_6 <- purrr::map_dbl(t_seq, surv_pieces_simple, 
+                        change_points = c(6), lambdas = log(2) / c(8, 22))
+
+df_alternative = data.frame(x = rep(t_seq,3),
+                            y = c(s_c,s_e_0,s_e_4),
+                            type = c(rep("Control",length(s_c)),
+                                     rep("Delay = 0 months",length(s_c)),
+                                     rep("Delay = 4 months",length(s_c))))
+
+ggplot(df_alternative, aes(x = x, y = y, color = type)) + 
+  geom_line(size = 1) +
+  scale_y_continuous("Survival",limits = c(0,1)) +
+  scale_x_continuous("Time (months)") +
+  labs(color = "", title = "Alternative hypotheses") +
+  theme_bw() +
+  theme(text = element_text(size = 16),
+        legend.position = c(0.75,0.9),
+        #legend.text = element_text(face = "italic"),
+        legend.background = element_rect(fill="transparent"),
+        legend.key = element_rect(fill="transparent"))
+```
+
+## Reproduce power calculation
+
+
+
+```{r}
+model_ph <- list(change_points = c(4),
+              lambdas_0 = c(log(2) / 8, log(2) / 8),
+              lambdas_1 = c(log(2) / 12.3, log(2) / 12.3))
+model_nph <- list(change_points = c(4),
+                  lambdas_0 = c(log(2) / 8, log(2) / 8),
+                  lambdas_1 = c(log(2) / 8, log(2) / 16.6))
+recruitment_options = list(list(n_0 = 150, n_1 = 150, r_period = 8, k = 1),
+                           list(n_0 = 155, n_1 = 155, r_period = 8, k = 1),
+                           list(n_0 = 160, n_1 = 160, r_period = 8, k = 1),
+                           list(n_0 = 165, n_1 = 165, r_period = 8, k = 1),
+                           list(n_0 = 170, n_1 = 170, r_period = 8, k = 1),
+                           list(n_0 = 175, n_1 = 175, r_period = 8, k = 1),
+                           list(n_0 = 180, n_1 = 180, r_period = 8, k = 1))
+## ph ##
+single_stage_options_lrt_ph <- recruitment_options %>% 
+  purrr::map(gsdelayed::single_stage_design,
+             t_star = 0,
+             model = model_ph,
+             dco_final = 21,
+             alpha_one_sided = 0.025)
+pow_ph_0 <- purrr::map_dbl(single_stage_options_lrt_ph, function(x) round(x$overall_power, 2))
+pow_ph_0
+## nph ##
+single_stage_options_lrt_nph <- recruitment_options %>% 
+  purrr::map(gsdelayed::single_stage_design,
+             t_star = 0,
+             model = model_nph,
+             dco_final = 21,
+             alpha_one_sided = 0.025)
+pow_nph_0 <- purrr::map_dbl(single_stage_options_lrt_nph, function(x) round(x$overall_power, 2))
+pow_nph_0
+## ph ##
+single_stage_options_mwlrt6_ph <- recruitment_options %>% 
+  purrr::map(gsdelayed::single_stage_design,
+             t_star = 6,
+             model = model_ph,
+             dco_final = 21,
+             alpha_one_sided = 0.025)
+pow_ph_6 <- purrr::map_dbl(single_stage_options_mwlrt6_ph, function(x) round(x$overall_power, 2))
+pow_ph_6
+## nph ##
+single_stage_options_mwlrt6_nph <- recruitment_options %>% 
+  purrr::map(gsdelayed::single_stage_design,
+             t_star = 6,
+             model = model_nph,
+             dco_final = 21,
+             alpha_one_sided = 0.025)
+pow_nph_6 <- purrr::map_dbl(single_stage_options_mwlrt6_nph, function(x) round(x$overall_power, 2))
+pow_nph_6
+```
+
+## Reproduce expected duration
+
+```{r}
+######################################
+recruitment <- list(n_0 = 150, 
+                    n_1 = 150, 
+                    r_period = 8, 
+                    k = 1)
+model <- list(change_points = c(4),
+              lambdas_0 = c(log(2) / 8, log(2) / 8),
+              lambdas_1 = c(log(2) / 8, log(2) / 16.6))
+######################################
+hsd_obf <- function(t, alpha_one_sided = 0.025, gamma = -4){
+  alpha_one_sided * (1 - exp(-gamma * t)) / (1 - exp(-gamma))}
+hsd_mid <- function(t, alpha_one_sided = 0.025, gamma = -1.5){
+  alpha_one_sided * (1 - exp(-gamma * t)) / (1 - exp(-gamma))}
+hsd_poc <- function(t, alpha_one_sided = 0.025, gamma = 1){
+  alpha_one_sided * (1 - exp(-gamma * t)) / (1 - exp(-gamma))}
+### - ###
+single_stage_design(t_star = 6,
+                    model = model,
+                    recruitment = recruitment,
+                    dco_final = 21,
+                    alpha_one_sided = 0.025)[c("overall_power", "n_events")]
+### 11 #####
+two_stage_design(t_star = 6,
+                 model = model,
+                 recruitment = recruitment,
+                 dco_int = 11,
+                 dco_final = 21,
+                 alpha_spend_f = hsd_obf,
+                 alpha_one_sided = 0.025)[c("overall_power", "expected_t")]
+two_stage_design(t_star = 6,
+                 model = model,
+                 recruitment = recruitment,
+                 dco_int = 11,
+                 dco_final = 21,
+                 alpha_spend_f = hsd_mid,
+                 alpha_one_sided = 0.025)[c("overall_power", "expected_t")]
+two_stage_design(t_star = 6,
+                 model = model,
+                 recruitment = recruitment,
+                 dco_int = 11,
+                 dco_final = 21,
+                 alpha_spend_f = hsd_poc,
+                 alpha_one_sided = 0.025)[c("overall_power", "expected_t")]
+### 16 #####
+two_stage_design(t_star = 6,
+                 model = model,
+                 recruitment = recruitment,
+                 dco_int = 16,
+                 dco_final = 21,
+                 alpha_spend_f = hsd_obf,
+                 alpha_one_sided = 0.025)[c("overall_power", "expected_t")]
+two_stage_design(t_star = 6,
+                 model = model,
+                 recruitment = recruitment,
+                 dco_int = 16,
+                 dco_final = 21,
+                 alpha_spend_f = hsd_mid,
+                 alpha_one_sided = 0.025)[c("overall_power", "expected_t")]
+two_stage_design(t_star = 6,
+                 model = model,
+                 recruitment = recruitment,
+                 dco_int = 16,
+                 dco_final = 21,
+                 alpha_spend_f = hsd_poc,
+                 alpha_one_sided = 0.025)[c("overall_power", "expected_t")]
+### 11 & 16 #####
+three_stage_design(t_star = 6,
+                 model = model,
+                 recruitment = recruitment,
+                 dco_int_1 = 11,
+                 dco_int_2 = 16,
+                 dco_final = 21,
+                 alpha_spend_f = hsd_obf,
+                 alpha_one_sided = 0.025)[c("overall_power", "expected_t")]
+three_stage_design(t_star = 6,
+                 model = model,
+                 recruitment = recruitment,
+                 dco_int_1 = 11,
+                 dco_int_2 = 16,
+                 dco_final = 21,
+                 alpha_spend_f = hsd_mid,
+                 alpha_one_sided = 0.025)[c("overall_power", "expected_t")]
+three_stage_design(t_star = 6,
+                 model = model,
+                 recruitment = recruitment,
+                 dco_int_1 = 11,
+                 dco_int_2 = 16,
+                 dco_final = 21,
+                 alpha_spend_f = hsd_poc,
+                 alpha_one_sided = 0.025)[c("overall_power", "expected_t")]
+```
+
+
+## Reproduce design plots
+
+
+```{r}
+hsd_obf <- function(t, alpha_one_sided = 0.025, gamma = -4){
+  alpha_one_sided * (1 - exp(-gamma * t)) / (1 - exp(-gamma))}
+d <- three_stage_design(t_star = 6,
+                        model = model,
+                        recruitment = recruitment,
+                        dco_int_1 = 11,
+                        dco_int_2 = 16,
+                        dco_final = 21,
+                        alpha_spend_f = hsd_obf,
+                        alpha_one_sided = 0.025)
+
+d$n_events
+d$critical_values
+
+
+df_critical_values = data.frame (x = d$n_events,
+                                 y = d$critical_values)
+
+ggplot(df_critical_values,aes(x = x, y = y)) +
+  geom_point(size = 3) +
+  scale_x_continuous("Observed number of events", limits = c(0,220)) +
+  scale_y_continuous("Z statistic", limits = c(-4,1)) +
+  labs(title = "Planned stopping boundaries") +
+  geom_segment(aes(x = d$n_events[1], y = -4, xend = d$n_events[1], yend = d$critical_values[1]), color = "black", size = 0.75) +
+  geom_segment(aes(x = d$n_events[2], y = -4, xend = d$n_events[2], yend = d$critical_values[2]), color = "black", size = 0.75) +
+  geom_segment(aes(x = d$n_events[3], y = -4, xend = d$n_events[3], yend = d$critical_values[3]), color = "black", size = 0.75) +
+  geom_hline(yintercept=0, linetype="dashed", color = "black", size=0.75) +
+  theme_bw() +
+  theme(text = element_text(size = 16),
+        legend.position = c(0.85,0.2),
+        legend.background = element_rect(fill="transparent"),
+        legend.key = element_rect(fill="transparent"))
+
+######################################
+## draw expected number of events
+cal_t <- 1:31
+exp_n <- numeric(31)
+for (i in 1:31){
+  exp_n[i] <- single_stage_design(t_star = 6, 
+                                  model = model,recruitment = recruitment,
+                                  dco = i,
+                                  alpha_one_sided = 0.025)$n_events
+}
+
+df_event_times = data.frame(x = c(0,8,31,cal_t), 
+                            y = c(0,300,300,exp_n),
+                            type = c("Recruited","Recruited","Recruited",rep("Events",length(cal_t))))
+
+df_event_times$type = factor(df_event_times$type,
+                             levels = c("Recruited","Events"), 
+                             labels = c("Recruited","Events"),
+                             ordered = TRUE)
+
+df_dotted_lines1 = data.frame(x = c(0,11,11),y = c(d$n_events[1],d$n_events[1],0))
+df_dotted_lines2 = data.frame(x = c(0,16,16),y = c(d$n_events[2],d$n_events[2],0))
+df_dotted_lines3 = data.frame(x = c(0,21,21),y = c(d$n_events[3],d$n_events[3],0))
+
+colors_ggplot_2 = hue_pal()(2)
+
+ggplot(df_event_times,aes(x = x, y = y, color = type)) +
+  geom_line(df_dotted_lines1, mapping = aes(x = x, y = y), colour = "black", linetype = "dashed") +
+  geom_line(df_dotted_lines2, mapping = aes(x = x, y = y), colour = "black", linetype = "dashed") +
+  geom_line(df_dotted_lines3, mapping = aes(x = x, y = y), colour = "black", linetype = "dashed") +
+  geom_line(size = 1) +
+  scale_color_manual(values=colors_ggplot_2) +
+  scale_x_continuous("Time since start of study (months)", limits = c(0,32)) +
+  scale_y_continuous("Expected n", limits = c(0,300)) +
+  labs(color = " ", title = "Convert from time to events") +
+  theme_bw() +
+  theme(text = element_text(size = 16),
+        legend.position = c(0.85,0.2),
+        legend.background = element_rect(fill="transparent"),
+        legend.key = element_rect(fill="transparent"))
+
+```
+
+
+
+
+## Reproduce implementation
+
+```{r}
+## simulate a trial
+set.seed(45)
+dat_uncensored <- gsdelayed::sim_t_uncensored(model = list(change_points = c(4),
+                                                           lambdas_0 = c(0.087, 0.087),
+                                                           lambdas_1 = c(0.087, 0.055)), 
+                                              recruitment = recruitment)
+head(dat_uncensored)
+#################################################################
+dat_interim_1 <- gsdelayed::apply_dco(dat_uncensored, dco = NULL, events = 122)
+head(dat_interim_1)
+
+
+km_IA1 <- survival::survfit(survival::Surv(time, event) ~ group,
+                     data = dat_interim_1)
+
+p_km_1 <- survminer::ggsurvplot(km_IA1,
+                      data = dat_interim_1,
+                      legend.labs = c("Control","Experimental"),
+                      risk.table = TRUE,
+                      conf.int = TRUE,
+                      surv.median.line = "hv",
+                      title = "A) Interim Analysis 1",
+                      break.x.by = 2,
+                      legend.title = "",
+                      xlab = "Time (months)",
+                      ylab = "Overall survival",
+                      risk.table.fontsize = 4)
+
+wlrt_interim_1 <-gsdelayed::wlrt(dat_interim_1,
+                               trt_colname = "group",
+                               time_colname = "time",
+                               event_colname = "event",
+                               wlr = "mw",
+                               t_star = 6)
+
+wlrt_interim_1$v_u / d$var_u[3]
+
+qnorm(hsd_obf(wlrt_interim_1$v_u / d$var_u[3]))
+
+c_1 <- gsdelayed::crit_1_of_3(info_frac_sf = wlrt_interim_1$v_u / d$var_u[3],
+                              alpha_spend_f = hsd_obf,
+                              alpha_one_sided = 0.025)
+c_1
+
+wlrt_interim_1$u
+wlrt_interim_1$v_u
+wlrt_interim_1$z
+
+
+c_1_star <- gsdelayed::crit_1_of_3(info_frac_sf = wlrt_interim_1$v_u / d$var_u[3],
+                                   alpha_spend_f = function(t, alpha_one_sided) (d$alpha_spend_f(d$var_u / max(d$var_u)))[1],
+                                   alpha_one_sided = 0.025)
+c_1_star
+```
+
+
+```{r}
+### interim 2
+##############################################################
+dat_interim_2 <- gsdelayed::apply_dco(dat_uncensored, dco = NULL, events = 170)
+head(dat_interim_2)
+
+
+km_IA2 <- survival::survfit(survival::Surv(time, event) ~ group,
+                            data = dat_interim_2)
+
+p_km_2 <- survminer::ggsurvplot(km_IA2,
+                      data = dat_interim_2,
+                      legend.labs = c("Control","Experimental"),
+                      risk.table = TRUE,
+                      conf.int = TRUE,
+                      surv.median.line = "hv",
+                      title = "B) Interim Analysis 2",
+                      break.x.by = 2,
+                      legend.title = "",
+                      xlab = "Time (months)",
+                      ylab = "",
+                      risk.table.fontsize = 4)
+
+
+wlrt_interim_2 <-gsdelayed::wlrt(dat_interim_2,
+                                 trt_colname = "group",
+                                 time_colname = "time",
+                                 event_colname = "event",
+                                 wlr = "mw",
+                                 t_star = 6)
+
+wlrt_interim_2$v_u /d$var_u[3]
+
+hsd_obf(wlrt_interim_2$v_u /d$var_u[3])
+
+c_2 <- gsdelayed::crit_2_of_3(info_frac_sf = wlrt_interim_2$v_u / d$var_u[3],
+                              info_frac_1_2 =  wlrt_interim_1$v_u / wlrt_interim_2$v_u,
+                              crit_1 = c_1,
+                              alpha_spend_f = hsd_obf ,
+                              alpha_one_sided = 0.025)
+
+c_2 
+
+
+
+c_2_star <- gsdelayed::crit_2_of_3(info_frac_sf = wlrt_interim_2$v_u / d$var_u[3],
+                                   info_frac_1_2 =  wlrt_interim_1$v_u / wlrt_interim_2$v_u,
+                                   crit_1 = c_1_star,
+                                   alpha_spend_f = function(t, alpha_one_sided) (d$alpha_spend_f(d$var_u / max(d$var_u)))[2],
+                                   alpha_one_sided = 0.025)
+
+c_2_star 
+
+hsd_obf(wlrt_interim_2$v_u /d$var_u[3])
+
+wlrt_interim_2$z
+wlrt_interim_2$u
+wlrt_interim_2$v_u
+
+```
+
+
+
+```{r}
+### final analysis
+###################################################
+dat_interim_3 <- gsdelayed::apply_dco(dat_uncensored, dco = NULL, events = 203)
+head(dat_interim_3)
+
+
+
+
+km_IA3 <- survival::survfit(survival::Surv(time, event) ~ group,
+                            data = dat_interim_3)
+
+p_km_3 <- survminer::ggsurvplot(km_IA3,
+                      data = dat_interim_3,
+                      legend.labs = c("Control","Experimental"),
+                      risk.table = TRUE,
+                      conf.int = TRUE,
+                      surv.median.line = "hv",
+                      title = "C) Final Analysis",
+                      break.x.by = 2,
+                      legend.title = "",
+                      xlab = "Time (months)",
+                      ylab = "",
+                      risk.table.fontsize = 4)
+
+
+
+
+
+
+wlrt_interim_3 <-gsdelayed::wlrt(dat_interim_3,
+                                 trt_colname = "group",
+                                 time_colname = "time",
+                                 event_colname = "event",
+                                 wlr = "mw",
+                                 t_star = 6)
+wlrt_interim_3$u
+wlrt_interim_3$v_u
+wlrt_interim_3$z
+
+d$var_u[3]
+
+c_3 <- gsdelayed::crit_3_of_3(info_frac_1_3 = wlrt_interim_1$v_u / wlrt_interim_3$v_u,
+                       info_frac_2_3 = wlrt_interim_2$v_u / wlrt_interim_3$v_u,
+                       crit_1 = c_1,
+                       crit_2 = c_2,
+                       alpha_spend_f = hsd_obf,
+                       alpha_one_sided = 0.025)
+
+c_3
+
+
+c_3_star <- gsdelayed::crit_3_of_3(info_frac_1_3 = wlrt_interim_1$v_u / wlrt_interim_3$v_u,
+                       info_frac_2_3 = wlrt_interim_2$v_u / wlrt_interim_3$v_u,
+                       crit_1 = c_1_star,
+                       crit_2 = c_2_star,
+                       alpha_spend_f = function(t, alpha_one_sided) (d$alpha_spend_f(d$var_u / max(d$var_u)))[],
+                       alpha_one_sided = 0.025)
+
+
+c_3_star
+
+```
+
+
+
+```{r}
+## plotting and inference
+lrt_1 <-gsdelayed::wlrt(dat_interim_1,
+                        trt_colname = "group",
+                        time_colname = "time",
+                        event_colname = "event",
+                        wlr = "mw",
+                        t_star = 0)
+
+
+lrt_2 <-gsdelayed::wlrt(dat_interim_2,
+                        trt_colname = "group",
+                        time_colname = "time",
+                        event_colname = "event",
+                        wlr = "mw",
+                        t_star = 0)
+
+
+lrt_3 <-gsdelayed::wlrt(dat_interim_3,
+                        trt_colname = "group",
+                        time_colname = "time",
+                        event_colname = "event",
+                        wlr = "mw",
+                        t_star = 0)
+
+
+df_IA3 = data.frame(x = c(d$n_events[1],d$n_events[2],d$n_events[3]),
+                    y = c(wlrt_interim_1$z, wlrt_interim_2$z, wlrt_interim_3$z),
+                    y2 = c(lrt_1$z, lrt_2$z, lrt_3$z))
+
+p_bounds <- ggplot(df_critical_values,aes(x = x, y = y)) +
+  geom_point(size = 3) +
+  scale_x_continuous("Observed number of events", limits = c(0,220), 
+                     breaks = c(0,122,170, 203)) +
+  scale_y_continuous("Z statistic", limits = c(-4,1)) +
+  labs(title = "Planned stopping boundaries") +
+  geom_segment(aes(x = d$n_events[1], y = -4, xend = d$n_events[1], yend = d$critical_values[1]), color = "black", size = 0.75) +
+  geom_segment(aes(x = d$n_events[2], y = -4, xend = d$n_events[2], yend = d$critical_values[2]), color = "black", size = 0.75) +
+  geom_segment(aes(x = d$n_events[3], y = -4, xend = d$n_events[3], yend = d$critical_values[3]), color = "black", size = 0.75) +
+  geom_hline(yintercept=0, linetype="dashed", color = "black", size=0.75) +
+  theme_bw() +
+  geom_point(data = df_IA3, mapping = aes(x = x, y = y), shape = 4, size = 3, colour = "blue") +
+  geom_point(data = df_IA3, mapping = aes(x = x, y = y2), shape = 2, size = 3, colour = "red") +
+  geom_line(df_IA3, mapping = aes(x = x, y = y), size = 0.25, linetype = "dashed", colour = "blue") +
+  theme(text = element_text(size = 16),
+        legend.position = c(0.85,0.2),
+        #legend.text = element_text(face = "italic"),
+        legend.background = element_rect(fill="transparent"),
+        legend.key = element_rect(fill="transparent"))
+
+
+survminer::arrange_ggsurvplots(list(p_km_1, p_km_3, p_km_2), ncol = 2, nrow = 2)
+
+################################################################
+## p-value
+gsdelayed::stagewise_p_3(c_1_star,
+                         c_2_star,
+                         wlrt_interim_3$z,
+                         wlrt_interim_1$v_u, 
+                         wlrt_interim_2$v_u,
+                         wlrt_interim_3$v_u)
+
+
+#Survival probabilities
+
+surv_table = summary(km_IA3)
+
+surv_table_control <- data.frame(group = "Control",
+                         time = surv_table$time[surv_table$strata == "group=control"],
+                         n.risk = surv_table$n.risk[surv_table$strata == "group=control"],
+                         n.event = surv_table$n.event[surv_table$strata == "group=control"],
+                         n.censor = surv_table$n.censor[surv_table$strata == "group=control"],
+                         surv = surv_table$surv[surv_table$strata == "group=control"],
+                         upper = surv_table$upper[surv_table$strata == "group=control"],
+                         lower = surv_table$lower[surv_table$strata == "group=control"])
+
+head(surv_table_control)
+
+
+surv_table_experimental <- data.frame(group = "Experimental",
+                                 time = surv_table$time[surv_table$strata == "group=experimental"],
+                                 n.risk = surv_table$n.risk[surv_table$strata == "group=experimental"],
+                                 n.event = surv_table$n.event[surv_table$strata == "group=experimental"],
+                                 n.censor = surv_table$n.censor[surv_table$strata == "group=experimental"],
+                                 surv = surv_table$surv[surv_table$strata == "group=experimental"],
+                                 upper = surv_table$upper[surv_table$strata == "group=experimental"],
+                                 lower = surv_table$lower[surv_table$strata == "group=experimental"])
+
+head(surv_table_experimental)
+
+#Restricted mean survival time
+rmst2(dat_interim_3$time, as.numeric(dat_interim_2$event), ifelse(dat_interim_2$group == "control",0,1), tau = 18)
+
+#Quantiles of the survival
+round(quantile(km_IA2, c(0.01, 0.05, 0.1, 0.25, 0.5, 0.75))$quantile,3)
+
+```
+
+
+
+
+## Double checking
+
+### Comparison with gsDesign
+
+It's possible to compare the boundaries to `gsDesign`
+
+```{r}
+### compare 
+d$critical_values
+### with
+gsDesign::gsDesign(k = 3, test.type = 1,
+timing = d$var_u / d$var_u[3], sfupar = -4)
+```
+
+
+### Comparison with simulation
+
+It's possible to check the power of the (modestly-weighted) log-rank test via simulation.
+
+
+```{r}
+d <- three_stage_design(t_star = 6,
+                        model = model,
+                        recruitment = recruitment,
+                        dco_int_1 = 11,
+                        dco_int_2 = 16,
+                        dco_final = 21)
+sim_results <- three_stage_sim(n_sims = 1000, design = d)
+## compare 
+d$overall_power
+## with
+mean(sim_results$z_1 < sim_results$c_1 | 
+       sim_results$z_2 < sim_results$c_2 | 
+       sim_results$z_3 < sim_results$c_3)
+## compare
+d$expected_t
+## with 
+mean(sim_results$t_1 * (sim_results$z_1 <= sim_results$c_1) + 
+       sim_results$t_2 * ((sim_results$z_1 > sim_results$c_1) & 
+                            (sim_results$z_2<=sim_results$c_2)) +
+       sim_results$t_3 *  ((sim_results$z_1 > sim_results$c_1) & 
+                             (sim_results$z_2 > sim_results$c_2)))
+```
+
+
+Let's try another one:
+
+```{r}
+d <- three_stage_design(t_star = 6,
+model = model,
+recruitment = recruitment,
+dco_int_1 = 11,
+dco_int_2 = 16,
+dco_final = 21,
+alpha_spend_f = hsd_mid,
+alpha_one_sided = 0.025)
+### compare 
+d$critical_values
+### with
+gsDesign::gsDesign(k = 3, test.type = 1, 
+timing = d$var_u / d$var_u[3], sfupar = -1.5)
+sim_results <- three_stage_sim(n_sims = 1000, design = d)
+## compare 
+d$overall_power
+## with
+mean(sim_results$z_1 < sim_results$c_1 |
+sim_results$z_2 < sim_results$c_2 | 
+sim_results$z_3 < sim_results$c_3)
+## compare
+d$expected_t
+## with 
+mean(sim_results$t_1 * (sim_results$z_1 <= sim_results$c_1) + 
+sim_results$t_2 *  ((sim_results$z_1 > sim_results$c_1) &
+(sim_results$z_2 <= sim_results$c_2)) +
+sim_results$t_3 *  ((sim_results$z_1 > sim_results$c_1) &
+(sim_results$z_2 > sim_results$c_2)))
+```

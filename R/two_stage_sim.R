@@ -75,7 +75,7 @@ two_stage_sim_1 <- function(dummy = 1,
     ##########################
 
 
-    if (wlrt_interim_1$v_u / design$var_u[2] > 0.975){
+    if (wlrt_interim$v_u / design$var_u[2] > 0.975){
 
       c_1 <- qnorm(alpha_one_sided)
 
@@ -129,7 +129,7 @@ two_stage_sim_1 <- function(dummy = 1,
 #' @return A data-frame containing: critical values, z-statistics, timing of analyses.
 #' @export
 
-two_stage_sim <- function(n_sims = 1, design, model = NULL, recruitment = NULL, info_frac_v){
+two_stage_sim <- function(n_sims = 1, design, model = NULL, recruitment = NULL, info_frac_v = TRUE){
   purrr::map_df(1:n_sims,
                 two_stage_sim_1,
                 design = design,

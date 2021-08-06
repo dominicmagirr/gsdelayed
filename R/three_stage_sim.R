@@ -119,6 +119,25 @@ three_stage_sim_1 <- function(dummy = 1,
       c_3 <- -Inf
 
     }
+    else if (wlrt_interim_2$v_u < wlrt_interim_1$v_u ){
+
+       c_1 <- crit_1_of_3(info_frac_sf = wlrt_interim_1$v_u / design$var_u[3],
+                         alpha_spend_f = alpha_spend_f,
+                         alpha_one_sided = alpha_one_sided)
+
+
+
+      c_2 <- -Inf
+
+
+
+      c_3 <- crit_3_of_3(info_frac_1_3 = wlrt_interim_1$v_u / wlrt_final$v_u,
+                         info_frac_2_3 = wlrt_interim_2$v_u / wlrt_final$v_u,
+                         crit_1 = c_1,
+                         crit_2 = c_2,
+                         alpha_spend_f = alpha_spend_f,
+                         alpha_one_sided = alpha_one_sided)
+    }
     else {
 
       c_1 <- crit_1_of_3(info_frac_sf = wlrt_interim_1$v_u / design$var_u[3],

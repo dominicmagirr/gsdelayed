@@ -367,8 +367,7 @@ crit_1
 In fact, the previous three steps could be achieved with a single helper function `crit_1_of_2`:
 
 ```{r}
-gsdelayed::crit_1_of_2(var_u_int = wlrt_interim$v_u,
-                       design = two_stage_mwlrt,
+gsdelayed::crit_1_of_2(info_frac_sf = wlrt_interim$v_u / two_stage_mwlrt$var_u[2],
                        alpha_spend_f = ldobf,
                        alpha_one_sided = 0.025)
 ```
@@ -422,9 +421,8 @@ crit_2
 Again, the previous three steps could be achieved with a single call to the helper function `crit_2_of_2`:
 
 ```{r}
-crit_2_of_2(var_u_int = wlrt_interim$v_u,
-            var_u_final = wlrt_final$v_u,
-            design = two_stage_mwlrt,
+crit_2_of_2(info_frac_1_2 = wlrt_interim$v_u /  wlrt_final$v_u,
+            crit_1 =  crit_1,
             alpha_spend_f = ldobf,
             alpha_one_sided = 0.025)
 ```
@@ -449,8 +447,7 @@ two_stage_sim(n_sims = 10, design = two_stage_mwlrt)
 A final point on implementation: having stopped for efficacy at the second analysis, it's possible to calculate a stage-wise one-sided p-value:
 
 ```{r}
-stagewise_p_2(crit_1 = gsdelayed::crit_1_of_2(var_u_int = wlrt_interim$v_u,
-                                              design = two_stage_mwlrt,
+stagewise_p_2(crit_1 = gsdelayed::crit_1_of_2(info_frac_sf = wlrt_interim$v_u / two_stage_mwlrt$var_u[2],
                                               alpha_spend_f = ldobf,
                                               alpha_one_sided = 0.025),
               z_2 = wlrt_final$z,
