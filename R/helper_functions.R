@@ -1,3 +1,25 @@
+#' Convert from s_star to t_star based on model assumptions
+#'
+#' Find the value of t_star that corresponds to a given s_star, given model assumptions.
+#'
+#' @param s_star The s_star parameter of the modestly weighted logrank test. A number between 0 and 1.
+#' @param model The piecewise hazard model.
+#'   A list containing the \code{change_points} and \code{lambdas}.
+#' @param recruitment List of recruitment information.
+#'   Containing \enumerate{
+#'                 \item Sample size on control, \code{n_0}
+#'                 \item Sample size on experimental, \code{n_1}
+#'                 \item Recruitment period, \code{r_period}
+#'                 \item Recruitment parameter for power model, \code{k}
+#'
+#' @return The t_star parameter of the modestly weighted logrank test
+#' @export
+s_to_t_star <- function(s_star, recruitment, model){
+  t_star = uniroot(function(x){s_star - s_bar(x, recruitment, model)}, c(0, 1e4))$root
+  return(t_star = t_star)
+}
+
+
 #' Lan-DeMets O'Brien-Fleming alpha-spending function
 #'
 #' Find the cumulative alpha-spend at various information times according to Lan-DeMets OBF function.

@@ -4,12 +4,17 @@
 \alias{single_stage_sim}
 \title{Single-stage simulation}
 \usage{
-single_stage_sim(n_sims = 1, design)
+single_stage_sim(n_sims = 1, design, model = NULL,
+  recruitment = NULL)
 }
 \arguments{
 \item{n_sims}{The number of simulations.}
 
 \item{design}{The design object, created using \code{single_stage_design}}
+
+\item{model}{Model assumptions. Default is NULL, in which case model assumptions in the design object are used.}
+
+\item{recruitment}{Recruitment assumptions. Default is NULL, in which case recruitment assumptions in the design object are used.}
 }
 \value{
 A data-frame containing: critical value, z-statistic, timing of analysis.

@@ -4,12 +4,17 @@
 \alias{two_stage_sim}
 \title{Two-stage simulation}
 \usage{
-two_stage_sim(n_sims = 1, design)
+two_stage_sim(n_sims = 1, design, model = NULL, recruitment = NULL,
+  info_frac_v = TRUE)
 }
 \arguments{
 \item{n_sims}{The number of simulations.}
 
 \item{design}{The design object, created using \code{two_stage_design}}
+
+\item{model}{Model assumptions. Default is NULL, in which case model assumptions in the design object are used.}
+
+\item{recruitment}{Recruitment assumptions. Default is NULL, in which case recruitment assumptions in the design object are used.}
 }
 \value{
 A data-frame containing: critical values, z-statistics, timing of analyses.

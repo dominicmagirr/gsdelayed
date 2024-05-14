@@ -4,13 +4,11 @@
 \alias{crit_1_of_2}
 \title{Critical value at interim analysis}
 \usage{
-crit_1_of_2(var_u_int, design, alpha_spend_f = ldobf,
+crit_1_of_2(info_frac_sf, alpha_spend_f = ldobf,
   alpha_one_sided = 0.025)
 }
 \arguments{
-\item{var_u_int}{The observed variance of the weighted log-rank statistic at the interim.}
-
-\item{design}{The design object, created using \code{two_stage_design}}
+\item{info_frac_sf}{Information fraction to be used in the spending function at the first interim.}
 
 \item{alpha_spend_f}{The alpha-spending function. Default is the Lan-DeMets O'Brien-Fleming function.}
 

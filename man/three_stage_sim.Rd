@@ -4,12 +4,19 @@
 \alias{three_stage_sim}
 \title{Three-stage simulation}
 \usage{
-three_stage_sim(n_sims = 1, design)
+three_stage_sim(n_sims = 1, design, model = NULL, recruitment = NULL,
+  info_frac_v = TRUE)
 }
 \arguments{
 \item{n_sims}{The number of simulations.}
 
 \item{design}{The design object, created using \code{three_stage_design}}
+
+\item{model}{Model assumptions. Default is NULL, in which case model assumptions in the design object are used.}
+
+\item{recruitment}{Recruitment assumptions. Default is NULL, in which case recruitment assumptions in the design object are used.}
+
+\item{info_frac_v}{Is the information fraction based on the variance of the U statistics. Default is TRUE. If FALSE then the information fraction is based on the number of events.}
 }
 \value{
 A data-frame containing: critical values, z-statistics, timing of analyses.

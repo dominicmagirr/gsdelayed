@@ -4,15 +4,13 @@
 \alias{crit_2_of_2}
 \title{Critical value at final analysis}
 \usage{
-crit_2_of_2(var_u_int, var_u_final, design, alpha_spend_f = ldobf,
+crit_2_of_2(info_frac_1_2, crit_1, alpha_spend_f = ldobf,
   alpha_one_sided = 0.025)
 }
 \arguments{
-\item{var_u_int}{The observed variance of the weighted log-rank statistic at the interim.}
+\item{info_frac_1_2}{The observed information fraction: determines covariance of test statistics.}
 
-\item{var_u_final}{The observed variance of the weighted log-rank statistic at the final analysis.}
-
-\item{design}{The design object, created using \code{two_stage_design}}
+\item{crit_1}{The critical value for the z-statistic at the first interim, found via \code{crit_1_of_2}.}
 
 \item{alpha_spend_f}{The alpha-spending function. Default is the Lan-DeMets O'Brien-Fleming function.}
 
