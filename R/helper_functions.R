@@ -7,7 +7,7 @@
 #' @return A vector of cumulative alpha spend.
 #' @export
 #'
-ldobf <- function(t, alpha_one_sided = 0.025) 2 - 2 * pnorm(qnorm(1 - alpha_one_sided) / sqrt(t))
+ldobf <- function(t, alpha_one_sided = 0.025) 2 - 2 * pnorm(qnorm(1 - alpha_one_sided / 2) / sqrt(t))
 
 
 
