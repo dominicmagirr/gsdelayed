@@ -24,17 +24,22 @@ The goal of gsdelayed is to help with designing a randomized controlled trial, w
 
 You can install the development version from [GitHub](https://github.com/) with:
 
-``` r
+```{r eval=FALSE, include=TRUE}
 # install.packages("devtools")
 devtools::install_github("dominicmagirr/gsdelayed")
+library(gsdelayed)
 ```
+
+
+```{r include=FALSE}
+devtools::load_all("~/NPH/gsdelayed")
+```
+
 ## Example
 
 Suppose we are designing a RCT where we expect a delayed treatment effect on survival. For example, our alternative hypothesis might look like this:
 
 ```{r}
-library(gsdelayed)
-
 t_seq <- seq(0,36, length.out = 100)
 s_c <- purrr::map_dbl(t_seq, surv_pieces_simple, change_points = c(6), lambdas = log(2) / c(9, 9))
 s_e <- purrr::map_dbl(t_seq, surv_pieces_simple, change_points = c(6), lambdas = log(2) / c(9, 16))
