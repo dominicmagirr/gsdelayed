@@ -70,11 +70,7 @@ single_stage_design(t_star = 0,
                     recruitment = recruitment,
                     dco_final = 30,
                     alpha_one_sided = 0.025)[c("overall_power", "n_events")]
-#> $overall_power
-#> [1] 0.7978047
-#> 
-#> $n_events
-#> [1] 347.5672
+
 ```
 
 Answer: about 80%. And we expect to observe around 350 events. Given
@@ -92,11 +88,7 @@ single_stage_design(t_star = 12,
                     recruitment = recruitment,
                     dco_final = 30,
                     alpha_one_sided = 0.025)[c("overall_power", "n_events")]
-#> $overall_power
-#> [1] 0.9155788
-#> 
-#> $n_events
-#> [1] 347.5672
+
 ```
 
 ## 2-stage designs
@@ -118,19 +110,7 @@ two_stage_design(t_star = 0,
                                             "p_early_stop",
                                             "overall_power",
                                             "expected_t")]
-#> $critical_values
-#> [1] -2.325146 -2.026318
-#> 
-#> $p_early_stop
-#> under_alternative under_null_approx 
-#>        0.19697375        0.01003208 
-#> 
-#> $overall_power
-#> [1] 0.7787231
-#> 
-#> $expected_t
-#> under_alternative under_null_approx 
-#>          27.63631          29.87962
+
 ```
 
 …and then for the modestly-weighted test (t\*=12)…
@@ -147,19 +127,7 @@ two_stage_design(t_star = 12,
                                             "p_early_stop",
                                             "overall_power",
                                             "expected_t")]
-#> $critical_values
-#> [1] -2.680399 -1.985240
-#> 
-#> $p_early_stop
-#> under_alternative under_null_approx 
-#>       0.210082480       0.003676717 
-#> 
-#> $overall_power
-#> [1] 0.9117371
-#> 
-#> $expected_t
-#> under_alternative under_null_approx 
-#>          27.47901          29.95588
+
 ```
 
 ## 3-stage designs
@@ -181,23 +149,7 @@ three_stage_design(t_star = 0,
                                               "p_second_int_stop",
                                               "overall_power",
                                               "expected_t")]
-#> $critical_values
-#> [1] -2.325146 -2.170453 -2.046141
-#> 
-#> $p_first_int_stop
-#> under_alternative under_null_approx 
-#>        0.19697375        0.01003208 
-#> 
-#> $p_second_int_stop
-#> under_alternative under_null_approx 
-#>       0.355540272       0.008404153 
-#> 
-#> $overall_power
-#> [1] 0.7747065
-#> 
-#> $expected_t
-#> under_alternative under_null_approx 
-#>          25.50307          29.82919
+
 ```
 
 …and then for the modestly-weighted test (t\*=12)…
@@ -216,21 +168,5 @@ three_stage_design(t_star = 12,
                                               "p_second_int_stop",
                                               "overall_power",
                                               "expected_t")]
-#> $critical_values
-#> [1] -2.680399 -2.226216 -1.988668
-#> 
-#> $p_first_int_stop
-#> under_alternative under_null_approx 
-#>       0.210082480       0.003676717 
-#> 
-#> $p_second_int_stop
-#> under_alternative under_null_approx 
-#>        0.51090994        0.01068565 
-#> 
-#> $overall_power
-#> [1] 0.9133394
-#> 
-#> $expected_t
-#> under_alternative under_null_approx 
-#>          24.41355          29.89177
+
 ```
